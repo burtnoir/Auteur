@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<!-- 
+    What should the configuration include?  What would be good to be able to control?
+    
+    Small Stuff:
+    - 
+    
+    Big Stuff:
+    - Templates
+      - Project Type
+      - Tree starting point
+      - Text templates - ckeditor has this so they could be defined in config and then be available in the editor
+      - Starting tree nodes could have associated text templates
+    -
+
+ -->
+  <form id="configurationform" action="{{ url_for('save_config') }}" method=post>
+    <div class="form-group">
+      <label for="project_name">Name of New Project</label>
+      <input type="text" class="form-control" id="project_name" name="project_name" placeholder="New Project Name">
+    </div>
+    <button type="submit" class="btn btn-success">Save Configuration</button>
+  </form>
+{% endblock %}

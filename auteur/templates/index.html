@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block body %}
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      <h3 class="panel-title">Projects</h3>
+    </div>
+    <div class="list-group">
+      {% for project in projects %}
+        <a class="list-group-item" href={{ url_for('show_content', project_id=project.id) }}>{{ project.name }}</a>
+      {% else %}
+        <em>Unbelievable.  No entries here so far</em>
+      {% endfor %}
+    </div>
+  </div>
+  <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
+    <div class="form-group">
+      <label for="project_name">Name of New Project</label>
+      <input type="text" class="form-control" id="project_name" name="project_name" placeholder="New Project Name">
+    </div>
+    <button type="submit" class="btn btn-success">Create a New Project</button>
+  </form>
+{% endblock %}
