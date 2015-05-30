@@ -29,7 +29,7 @@ class AuteurTestCase(unittest.TestCase):
         assert 'Unbelievable.  No entries here so far' in rv.data
 
 
-    def test_messages(self):
+    def test_project(self):
         rv = self.app.post('/add_project', data=dict(
             project_name='Automated Test Project'
         ), follow_redirects=True)
