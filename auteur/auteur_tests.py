@@ -29,6 +29,14 @@ class AuteurTestCase(unittest.TestCase):
         assert 'Unbelievable.  No entries here so far' in rv.data
 
 
+    def test_messages(self):
+        rv = self.app.post('/add_project', data=dict(
+            project_name='Automated Test Project'
+        ), follow_redirects=True)
+        #assert 'No entries here so far' not in rv.data
+        assert 'Automated Test Project' in rv.data
+
+    
     def testName(self):
         pass
 
