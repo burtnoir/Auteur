@@ -61,8 +61,5 @@ target/
 
 # Eclipse
 .settings/
-<<<<<<< HEAD
-=======
 .project
 .pydevproject
->>>>>>> 54ab202... Beef up the git ignore to stop it bugging me.
