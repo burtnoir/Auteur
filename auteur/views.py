@@ -12,11 +12,13 @@ from flask.helpers import url_for, flash
 from flask.globals import request
 from flask.json import jsonify
 from sqlalchemy.sql.functions import func
+from auteur.forms import AddProject
 
 @app.route('/')
 def list_projects():
+    form = AddProject(request.form)
     projects = Project.query.all()
-    return render_template('index.html', projects=projects)
+    return render_template('index.html', projects=projects, form=form)
 
 @app.route('/project/<int:project_id>/', defaults = {'structure_id' : None})
 @app.route('/project/<int:project_id>/<int:structure_id>')
@@ -44,18 +46,24 @@ def add_project():
     '''
     Add a project.  Default a tree structure and sections to go with them.
     '''
-    project = Project(name=request.form['project_name'])
-    db_session.add(project)
-   
-    structure = Structure(title=request.form['project_name'], displayorder=1, project=project)
-    db_session.add(structure)
+    form = AddProject(request.form)
+    if form.validate():
+        project = Project(name=request.form['project_name'])
+        db_session.add(project)
+       
+        structure = Structure(title=request.form['project_name'], displayorder=1, project=project)
+        db_session.add(structure)
+        
+        section = Section(body="", structure=structure)
+        db_session.add(section)
+        db_session.commit()
     
-    section = Section(body="", structure=structure)
-    db_session.add(section)
-    db_session.commit()
+        flash('New Project Added')
+        return redirect(url_for('show_content', project_id=project.id, structure_id=structure.id))
+    
+    projects = Project.query.all()
+    return render_template('index.html', projects=projects, form=form)
 
-    flash('New Project Added')
-    return redirect(url_for('show_content', project_id=project.id, structure_id=structure.id))
 
 @app.route('/add_node/<int:project_id>', methods=['POST'])
 def add_node(project_id):

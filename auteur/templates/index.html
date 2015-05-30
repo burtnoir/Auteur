@@ -12,10 +12,11 @@
       {% endfor %}
     </div>
   </div>
+  
+  {% from "form_helper.html" import render_field %}
   <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
     <div class="form-group">
-      <label for="project_name">Name of New Project</label>
-      <input type="text" class="form-control" id="project_name" name="project_name" placeholder="New Project Name">
+      {{ render_field(form.project_name, class='form-control', id='project_name', placeholder='New Project Name') }}
     </div>
     <button type="submit" class="btn btn-success">Create a New Project</button>
   </form>
