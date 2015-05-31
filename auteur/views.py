@@ -76,8 +76,8 @@ def add_node(project_id):
     parent_id = nodes.get('parent')
     project = Project.query.filter_by(id=project_id).first()
     parent = Structure.query.filter_by(id=parent_id).first()
-    # TODO Need to specify the project here.
-    displayorder = db_session.query(Structure.displayorder, func.max(Structure.displayorder)).scalar() + 1
+    # Get the highest display order for this project so we can assign the new node to last place.
+    displayorder = db_session.query(Structure.displayorder, func.max(Structure.displayorder)).filter_by(id=project_id).scalar() + 1
     structure = Structure(parent=parent, title='New Section', displayorder=displayorder, project=project)
     db_session.add(structure)
     

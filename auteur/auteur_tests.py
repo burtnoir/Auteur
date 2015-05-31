@@ -33,17 +33,18 @@ class AuteurTestCase(unittest.TestCase):
         rv = self.app.post('/add_project', data=dict(
             project_name=''
         ), follow_redirects=True)
-        assert 'Automated Test Project' not in rv.data
         assert 'This field is required' in rv.data
 
         rv = self.app.post('/add_project', data=dict(
             project_name='Automated Test Project'
         ), follow_redirects=True)
         assert 'Automated Test Project' in rv.data
+        
+        rv = self.app.post('/add_project', data=dict(
+            project_name='Automated Test Project'
+        ), follow_redirects=True)
+        assert 'Please choose a unique project name.' in rv.data
     
-    def testName(self):
-        pass
-
 
 if __name__ == "__main__":
     unittest.main()
