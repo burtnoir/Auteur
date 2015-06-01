@@ -3,14 +3,14 @@ Created on May 30, 2015
 
 @author: sbrooks
 '''
-from wtforms import Form, TextField, validators
+from wtforms import Form, StringField, validators
 from auteur.database import db_session
 from auteur.models import Project
 from wtforms.validators import ValidationError
 from sqlalchemy.sql.functions import func
 
 class AddProject(Form):
-    project_name = TextField('New Project Name',
+    project_name = StringField('New Project Name',
                              [
                               validators.Length(min=1, max=256, message='This name is too long - 256 characters should be enough for anyone.'),
                               validators.DataRequired(message='You need to <b>name</b> the project.')
