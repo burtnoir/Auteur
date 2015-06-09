@@ -1,23 +1,42 @@
 {% extends "layout.html" %}
 {% block body %}
-  <div class="panel panel-info">
-    <div class="panel-heading">
-      <h3 class="panel-title">Projects</h3>
-    </div>
-    <div class="list-group">
-      {% for project in projects %}
-        <a class="list-group-item" href={{ url_for('show_content', project_id=project.id) }}>{{ project.name }}</a>
-      {% else %}
-        <em>Unbelievable.  No entries here so far</em>
-      {% endfor %}
+  <div class="col-md-6">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h3 class="panel-title">Projects</h3>
+      </div>
+  
+      <div class="list-group">
+        {% for project in projects %}
+          <a class="list-group-item" href={{ url_for('show_content', project_id=project.id) }}>
+          <h4 class="list-group-item-heading">{{ project.name }}</h4>
+          <p class="list-group-item-text">{{ project.short_description }}</p>
+          </a>
+        {% else %}
+          <em>Unbelievable.  No entries here so far</em>
+        {% endfor %}
+      </div>
+  
     </div>
   </div>
   
   {% from "form_helper.html" import render_field %}
-  <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
-    <div class="form-group">
-      {{ render_field(form.project_name, class='form-control', id='project_name', placeholder='New Project Name') }}
+  <div class="col-md-6">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h4 class="panel-title">Create a New Project</h4>
+      </div>
+      <div class="panel-body">
+        <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
+          <div class="form-group">
+            {{ render_field(form.project_name, class='form-control', id='project_name', placeholder='Enter the name here') }}
+          </div>
+          <div class="form-group">
+            {{ render_field(form.project_description, class='form-control', id='project_description', placeholder='Add a description here') }}
+          </div>
+          <button type="submit" class="btn btn-success">Start</button>
+        </form>
+      </div>
     </div>
-    <button type="submit" class="btn btn-success">Create a New Project</button>
-  </form>
+  </div>
 {% endblock %}

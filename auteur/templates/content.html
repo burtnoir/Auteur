@@ -1,31 +1,44 @@
 {% extends "layout.html" %}
 {% block body %}
 <div class=row>
+
+  <div class="panel panel-info">
+    <div class="panel-body bg-info">
+      <form id="editprojectform">
+        <fieldset>
+          <div class="form-group">
+            <input class="form-control" type="text" value="{{ project.name }}">
+          </div>
+          <div class="form-group">
+            <textarea class="form-control">{{ project.description }}</textarea>
+          </div>
+          </fieldset>
+        </form>
+      </div>
+  </div>
+
   <div class=col-md-3>
   
-
     <div class="panel panel-info">
       <div class="panel-heading">
-        <h3 class="panel-title">{{ project.name }}</h3>
+        <div class="btn-group btn-group-justified" role="group">
+          <div class="btn-group" role="group">
+            <button id="tree_add" type="button" class="btn btn-default">Add</button>
+          </div>
+          <div class="btn-group" role="group">
+            <button id="tree_rename" type="button" class="btn btn-default">Rename</button>
+          </div>
+          <div class="btn-group" role="group">
+            <button id="tree_delete" type="button" class="btn btn-default">Delete</button>
+          </div>
         </div>
-        <div class="panel-heading">
-    <div class="btn-group btn-group-justified" role="group">
-      <div class="btn-group" role="group">
-        <button id="tree_add" type="button" class="btn btn-default">Add</button>
-      </div>
-      <div class="btn-group" role="group">
-        <button id="tree_rename" type="button" class="btn btn-default">Rename</button>
-      </div>
-      <div class="btn-group" role="group">
-        <button id="tree_delete" type="button" class="btn btn-default">Delete</button>
-      </div>
-    </div>
       </div>
       
-      <div id=tree></div>
+      <div id=tree class="panel-body"></div>
 
      </div>
   </div>
+  
   <div class=col-md-9>
 
   	<form id=mainform action="{{ url_for('update_section') }}" method=post>

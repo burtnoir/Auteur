@@ -48,7 +48,7 @@ def add_project():
     '''
     form = AddProject(request.form)
     if form.validate():
-        project = Project(name=request.form['project_name'])
+        project = Project(name=request.form['project_name'], description=request.form['project_description'])
         db_session.add(project)
        
         structure = Structure(title=request.form['project_name'], displayorder=1, project=project)

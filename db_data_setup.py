@@ -11,7 +11,7 @@ drop_db()
 init_db()
 
 # Create the first project
-project = Project(name='First Test Project')
+project = Project(name='First Test Project', description='A description is required for the first project')
 db_session.add(project)
 db_session.commit()
 
@@ -40,7 +40,7 @@ db_session.add(section)
 db_session.commit()
 
 # Create the second project
-project = Project(name='Second Project')
+project = Project(name='Second Project', description='A description is required for the first project')
 db_session.add(project)
 db_session.commit()
 

@@ -8,13 +8,18 @@ from auteur.database import db_session
 from auteur.models import Project
 from wtforms.validators import ValidationError
 from sqlalchemy.sql.functions import func
+from wtforms.fields.simple import TextAreaField
 
 class AddProject(Form):
-    project_name = StringField('New Project Name',
+    project_name = StringField('Name',
                              [
                               validators.Length(min=1, max=256, message='This name is too long - 256 characters should be enough for anyone.'),
                               validators.DataRequired(message='You need to <b>name</b> the project.')
                               ])
+    project_description = TextAreaField('Description',
+                         [
+                          validators.DataRequired(message='You need to say something about the project.')
+                          ])
     
     def validate_project_name(form, field):
         '''

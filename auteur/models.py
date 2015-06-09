@@ -7,6 +7,7 @@ Created on Apr 25, 2015
 '''
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey 
 from auteur.database import Base
+from sqlalchemy import orm
 from sqlalchemy.orm import relationship, backref
 from datetime import datetime
     
@@ -14,12 +15,25 @@ class Project(Base):
     __tablename__ = 'project'
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
+    description = Column(Text)
 
-    def __init__(self, name):
+    def __init__(self, name, description):
         self.name = name
-
+        self.description = description
+        self.short_description = self.get_short_description()
+    
+    @orm.reconstructor
+    def init_on_load(self):
+        self.short_description = self.get_short_description()
+            
     def __repr__(self):
         return '<Project %r>' % self.name
+        
+    def get_short_description(self):
+        if len(self.description) > 150:
+            return self.description[0:150] + '...'        
+        return self.description
+
 
 class Structure(Base):
     __tablename__ = 'structure'
