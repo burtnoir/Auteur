@@ -12,19 +12,22 @@ from flask.helpers import url_for, flash
 from flask.globals import request
 from flask.json import jsonify
 from sqlalchemy.sql.functions import func
-from auteur.forms import AddProject
+from auteur.forms import ProjectForm
+
 
 @app.route('/')
 def list_projects():
-    form = AddProject(request.form)
+    form = ProjectForm(request.form)
     projects = Project.query.all()
     return render_template('index.html', projects=projects, form=form)
+
 
 @app.route('/project/<int:project_id>/', defaults = {'structure_id' : None})
 @app.route('/project/<int:project_id>/<int:structure_id>')
 def show_content(project_id, structure_id):
-    # show the post with the given id, the id is an integer
+    # show the project with the given id, the id is an integer
     project = Project.query.filter_by(id=project_id).first()
+    form = ProjectForm(obj=project)
     structure = Structure.query.filter_by(project_id=project.id)
     
     # If the id wasn't passed (probably because the call is from the project page)
@@ -32,7 +35,8 @@ def show_content(project_id, structure_id):
     if structure_id is None:
         structure_id = structure[0].id
     section = Section.query.filter_by(structure_id=structure_id).first()
-    return render_template('content.html', project=project, structure=structure, section=section)
+    return render_template('content.html', project=project, structure=structure, section=section, form=form)
+
 
 @app.route('/get_section', methods=['GET'])
 def get_section():
@@ -46,7 +50,7 @@ def add_project():
     '''
     Add a project.  Default a tree structure and sections to go with them.
     '''
-    form = AddProject(request.form)
+    form = ProjectForm(request.form)
     if form.validate():
         project = Project(name=request.form['project_name'], description=request.form['project_description'])
         db_session.add(project)
@@ -71,7 +75,6 @@ def add_node(project_id):
     Add a new node to the tree and pass the created data back to the caller so it can add
     it to the tree in the browser.
     '''
-    
     nodes = request.get_json()
     parent_id = nodes.get('parent')
     project = Project.query.filter_by(id=project_id).first()
@@ -86,6 +89,7 @@ def add_node(project_id):
     db_session.commit()
 
     return jsonify(id=structure.id, text=structure.title, displayorder=structure.displayorder, status_text="Hoorah! Tree was saved.")
+
 
 @app.route('/delete_node', methods=['POST'])
 def delete_node():
@@ -102,6 +106,7 @@ def delete_node():
 
     return jsonify(status_text="Hoorah! Tree node was deleted.")
 
+
 @app.route('/update_node', methods=['POST'])
 def update_node():
     '''
@@ -117,6 +122,7 @@ def update_node():
 
     return jsonify(status_text="Hoorah! Tree node was updated.")
 
+
 @app.route('/update_section', methods=['POST'])
 def update_section():
     section = Section.query.filter(Section.id == request.form['section_id']).first()
@@ -128,6 +134,23 @@ def update_section():
     flash('Save was a Complete Success!')
     return redirect(url_for('show_content', project_id=project_id, structure_id=structure_id))
 
+
+@app.route('/update_project/<int:project_id>', methods=['POST'])
+def update_project(project_id):
+    
+    form = ProjectForm(request.form)
+    if form.validate():
+        project = Project.query.filter_by(id=project_id).first()
+        project.name = request.form['name']
+        project.description = request.form['description']
+        db_session.commit()
+        return jsonify(status=True, status_text="Hoorah! Project details were updated.")
+
+    # Return the errors so that the caller can show them without refreshing
+    # the page.    
+    return jsonify(status=False, name_errors=form.name.errors, description_errors=form.description.errors)
+
+    
 @app.route('/show_config')
 def show_config():
     '''
@@ -135,6 +158,7 @@ def show_config():
     '''
     config = Project.query.all()
     return render_template('config.html', config=config)
+
 
 @app.route('/save_config', methods=['POST'])
 def save_config():

@@ -2,22 +2,18 @@
 {% block body %}
 <div class=row>
 
-  <div class="panel panel-info">
-    <div class="panel-body bg-info">
-      <form id="editprojectform">
-        <fieldset>
-          <div class="form-group">
-            <input class="form-control" type="text" value="{{ project.name }}">
-          </div>
-          <div class="form-group">
-            <textarea class="form-control">{{ project.description }}</textarea>
-          </div>
-          </fieldset>
-        </form>
-      </div>
-  </div>
-
   <div class=col-md-3>
+
+    <div id="projectdetails" class="panel">
+    
+      <div id="projectdisplay" class="panel-body bg-info">
+          {% from "form_helper.html" import render_field %}
+          <form id="editprojectform" action="{{ url_for('update_project', project_id=project.id) }}" method=post>
+              {{ render_field(form.name, class='form-control', id='name') }}
+              {{ render_field(form.description, class='form-control', id='description') }}
+          </form>
+      </div>
+    </div>
   
     <div class="panel panel-info">
       <div class="panel-heading">
@@ -76,6 +72,15 @@
 
   $('#tree_delete').click(function() {
     treeDelete();
+  });
+  
+  $('#editprojectform :input').change(function(){
+    editProject({{ project.id }});
+  });
+  
+  $( "#editprojectform" ).submit(function( event ) {
+    event.preventDefault();
+    editProject({{ project.id }});
   });
 </script>
 {% endblock %}

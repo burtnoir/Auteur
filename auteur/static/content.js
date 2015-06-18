@@ -126,4 +126,45 @@ $(document).ready(function() {
     });
   };
 
+  /**
+   * Go to the server to update the project information.
+   */
+  window.editProject = function(project_id) {
+
+    var errors = '';
+
+    $.ajax({
+      type : "POST",
+      url : SCRIPT_ROOT + '/update_project/' + project_id,
+      data : $("#editprojectform").serialize(),
+      complete : function(data) {
+
+        // Now we need to check for errors. If there are any then they need to
+        // be shown.
+        var r = data.responseJSON;
+        if (r.status) {
+          $('#descriptionerrors, #nameerrors').empty();
+          $('#descriptiongroup, #namegroup').removeClass('has-error');
+        } else {
+          errors = '';
+          if (r.name_errors.length > 0) {
+            $('#namegroup').addClass('has-error');
+            for (error in r.name_errors) {
+              errors += '<li>' + r.name_errors[error] + '</li>';
+            }
+            $('#nameerrors').html(errors);
+          }
+          errors = '';
+          if (r.description_errors.length > 0) {
+            $('#descriptiongroup').addClass('has-error');
+            for (error in r.description_errors) {
+              errors += '<li>' + r.description_errors[error] + '</li>';
+            }
+            $('#descriptionerrors').html(errors);
+          }
+        }
+      }
+    });
+  };
+
 });

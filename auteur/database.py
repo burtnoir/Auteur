@@ -6,8 +6,11 @@ Created on Apr 25, 2015
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+import auteur
 
-engine = create_engine('sqlite:////tmp/auteur.db', convert_unicode=True)
+# auteur.app.config['DATABASE']
+# 'sqlite:////tmp/auteur.db'
+engine = create_engine(auteur.app.config['DATABASE'], convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))

@@ -33,17 +33,30 @@ class AuteurTestCase(unittest.TestCase):
         rv = self.app.post('/add_project', data=dict(
             project_name=''
         ), follow_redirects=True)
-        assert 'This field is required' in rv.data
-
-        rv = self.app.post('/add_project', data=dict(
-            project_name='Automated Test Project'
-        ), follow_redirects=True)
-        assert 'Automated Test Project' in rv.data
+        assert 'You need to name the project.' in rv.data
         
         rv = self.app.post('/add_project', data=dict(
             project_name='Automated Test Project'
         ), follow_redirects=True)
-        assert 'Please choose a unique project name.' in rv.data
+        assert 'You need to say something about the project.' in rv.data
+
+        rv = self.app.post('/add_project', data=dict(
+            project_description='Automated Test Project'
+        ), follow_redirects=True)
+        assert 'You need to name the project.' in rv.data
+        
+        rv = self.app.post('/add_project', data=dict(
+            project_name='Automated Test Project',
+            project_description='Automated Test Project Description goes here!'
+        ), follow_redirects=True)
+        assert 'Automated Test Project' in rv.data
+        assert 'Automated Test Project Description goes here!' in rv.data
+        
+        rv = self.app.post('/add_project', data=dict(
+            project_name='Automated Test Project',
+            project_description='Automated Test Project Description goes here! Description is different.'
+        ), follow_redirects=True)
+        assert 'Name already used.  Maybe a writer should try to be more original?' in rv.data
     
 
 if __name__ == "__main__":
