@@ -13,7 +13,8 @@ from flask.globals import request
 from flask.json import jsonify
 from sqlalchemy.sql.functions import func
 from auteur.forms import ProjectForm
-
+from werkzeug.datastructures import Headers
+from flask import stream_with_context, Response
 
 @app.route('/')
 def list_projects():
@@ -150,6 +151,30 @@ def update_project(project_id):
     # the page.    
     return jsonify(status=False, name_errors=form.name.errors, description_errors=form.description.errors)
 
+
+@app.route('/export_project/<int:project_id>', methods=['GET'])
+def export_project(project_id):
+    '''
+    Export the project to a file for the user to download.
+    It will be a basic dump to start with to show the idea.
+    '''
+    def generate():
+        for instance in db_session.query(Structure).filter_by(project_id=project_id).order_by(Structure.displayorder):
+            section = Section.query.filter_by(structure_id=instance.id).first()
+            yield section.body
+    
+    # add a filename
+    project = Project.query.filter_by(id=project_id).first()
+    headers = Headers()
+    headers.add('Content-Disposition', 'attachment', filename=(project.name + '.html'))
+
+    # stream the response as the data is generated
+    # default mimetype is text/html which is what we want in this case.
+    return Response(
+        stream_with_context(generate()),
+        headers=headers
+    )
+    
     
 @app.route('/show_config')
 def show_config():
