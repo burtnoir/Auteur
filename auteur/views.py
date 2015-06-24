@@ -89,7 +89,7 @@ def add_node(project_id):
     db_session.add(section)
     db_session.commit()
 
-    return jsonify(id=structure.id, text=structure.title, displayorder=structure.displayorder, status_text="Hoorah! Tree was saved.")
+    return jsonify(id=structure.id, text=structure.title, displayorder=structure.displayorder, status_text="Hoorah! Section was added.")
 
 
 @app.route('/delete_node', methods=['POST'])
@@ -105,7 +105,7 @@ def delete_node():
         db_session.delete(structure)
         db_session.commit()
 
-    return jsonify(status_text="Hoorah! Tree node was deleted.")
+    return jsonify(status_text="Hoorah! Section was deleted.")
 
 
 @app.route('/update_node', methods=['POST'])
@@ -121,7 +121,7 @@ def update_node():
     structure.title = node_text
     db_session.commit()
 
-    return jsonify(status_text="Hoorah! Tree node was updated.")
+    return jsonify(status_text="Hoorah! Section was updated.")
 
 
 @app.route('/update_section', methods=['POST'])
@@ -129,11 +129,8 @@ def update_section():
     section = Section.query.filter(Section.id == request.form['section_id']).first()
     section.body = request.form['sectiontext']
     db_session.commit()
-    
-    structure_id = section.structure.id
-    project_id = section.structure.project.id
-    flash('Save was a Complete Success!')
-    return redirect(url_for('show_content', project_id=project_id, structure_id=structure_id))
+
+    return jsonify(status=True, status_text="Save was a Complete Success!")
 
 
 @app.route('/update_project/<int:project_id>', methods=['POST'])

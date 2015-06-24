@@ -38,12 +38,12 @@
   
   <div class=col-md-9>
 
-  	<form id=mainform action="{{ url_for('update_section') }}" method=post>
+  	<form id="mainform">
       <div class="form-group">
         <textarea id=sectiontext name=sectiontext>{{ section.body }}</textarea>
         <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}"/>
       </div>
-      <button class="btn btn-primary btn-block" type=submit role="button">Save</button>
+      <button id="savetext" class="btn btn-primary btn-block" type="submit">Save</button>
     </form>
 
   </div>
@@ -82,6 +82,11 @@
   $( "#editprojectform" ).submit(function( event ) {
     event.preventDefault();
     editProject({{ project.id }});
+  });
+    
+  $( "#mainform" ).submit(function( event ) {
+    event.preventDefault();
+    saveText({{ project.id }});
   });
 </script>
 {% endblock %}

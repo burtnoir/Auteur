@@ -31,6 +31,9 @@ $(document).ready(function() {
       url : SCRIPT_ROOT + '/update_node',
       data : JSON.stringify(x, null, '\t'),
       contentType : 'application/json;charset=UTF-8',
+      done : function(data) {
+        $('#statusbar').html(data.responseJSON.status_text);
+      }
     });
   }).jstree({
     'core' : {
@@ -83,6 +86,7 @@ $(document).ready(function() {
         if (new_node) {
           ref.edit(new_node);
         }
+        $('#statusbar').html(responseJSON.status_text);
       }
     });
 
@@ -121,6 +125,7 @@ $(document).ready(function() {
       complete : function(data) {
         // Now the server is done we can delete the node(s).
         ref.delete_node(sel);
+        $('#statusbar').html(data.responseJSON.status_text);
         return false;
       }
     });
@@ -145,6 +150,7 @@ $(document).ready(function() {
         if (r.status) {
           $('#descriptionerrors, #nameerrors').empty();
           $('#descriptiongroup, #namegroup').removeClass('has-error');
+          $('#statusbar').html(r.status_text);
         } else {
           errors = '';
           if (r.name_errors.length > 0) {
@@ -163,6 +169,27 @@ $(document).ready(function() {
             $('#descriptionerrors').html(errors);
           }
         }
+      }
+    });
+  };
+
+  /**
+   * Go to the server to update the project information.
+   */
+  window.saveText = function() {
+
+    // Update the editor before submitting so we get the data sent.
+    for (instance in CKEDITOR.instances)
+      CKEDITOR.instances[instance].updateElement();
+
+    // Post the data to be saved and notify the user when it's done.
+    $.ajax({
+      type : "POST",
+      url : SCRIPT_ROOT + '/update_section',
+      data : $("#mainform").serialize(),
+      complete : function(data) {
+        // Show the response text.
+        $('#statusbar').html(data.responseJSON.status_text);
       }
     });
   };
