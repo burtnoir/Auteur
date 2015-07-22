@@ -81,3 +81,37 @@ class Section(Base):
 
     def __repr__(self):
         return '<Section %r>' % self.body
+
+
+class SectionSynopsis(Base):
+    __tablename__ = 'sectionsynopsis'
+    id = Column(Integer, primary_key=True)
+    body = Column(Text)
+
+    structure_id = Column(Integer, ForeignKey('structure.id'))
+    structure = relationship('Structure',
+        backref=backref('sectionsynopsis', lazy='dynamic'))
+
+    def __init__(self, body, structure, pub_date=None):
+        self.body = body
+        self.structure = structure
+
+    def __repr__(self):
+        return '<Section Synopsis %r>' % self.body
+
+
+class SectionNotes(Base):
+    __tablename__ = 'sectionnotes'
+    id = Column(Integer, primary_key=True)
+    body = Column(Text)
+
+    structure_id = Column(Integer, ForeignKey('structure.id'))
+    structure = relationship('Structure',
+        backref=backref('sectionnotes', lazy='dynamic'))
+
+    def __init__(self, body, structure, pub_date=None):
+        self.body = body
+        self.structure = structure
+
+    def __repr__(self):
+        return '<Section Notes %r>' % self.body

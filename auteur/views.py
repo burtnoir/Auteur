@@ -3,27 +3,32 @@ Created on Apr 25, 2015
 
 @author: sbrooks
 '''
-from auteur import app
-from auteur.models import Project, Structure, Section
-from auteur.database import db_session
-from flask.templating import render_template
-from werkzeug.utils import redirect
-from flask.helpers import url_for, flash
-from flask.globals import request
-from flask.json import jsonify
-from sqlalchemy.sql.functions import func
-from auteur.forms import ProjectForm
-from werkzeug.datastructures import Headers
 from flask import stream_with_context, Response
+from flask.globals import request
+from flask.helpers import url_for, flash
+from flask.json import jsonify
+from flask.templating import render_template
+from sqlalchemy.sql.functions import func
+from werkzeug.datastructures import Headers
+from werkzeug.utils import redirect
+
+from auteur import app
+from auteur.database import db_session
+from auteur.forms import ProjectForm
+from auteur.models import Project, Structure, Section, SectionSynopsis, \
+    SectionNotes
+
 
 @app.route('/')
 def list_projects():
     form = ProjectForm(request.form)
     projects = Project.query.all()
-    return render_template('index.html', projects=projects, form=form)
+    return render_template('index.html', 
+                           projects=projects, 
+                           form=form)
 
 
-@app.route('/project/<int:project_id>/', defaults = {'structure_id' : None})
+@app.route('/project/<int:project_id>/', defaults={'structure_id' : None})
 @app.route('/project/<int:project_id>/<int:structure_id>')
 def show_content(project_id, structure_id):
     # show the project with the given id, the id is an integer
@@ -36,14 +41,32 @@ def show_content(project_id, structure_id):
     if structure_id is None:
         structure_id = structure[0].id
     section = Section.query.filter_by(structure_id=structure_id).first()
-    return render_template('content.html', project=project, structure=structure, section=section, form=form)
+    synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
+    notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
+    return render_template('content.html', 
+                           project=project, 
+                           structure=structure, 
+                           section=section, 
+                           synopsis=synopsis, 
+                           notes=notes, 
+                           form=form)
 
 
 @app.route('/get_section', methods=['GET'])
 def get_section():
+    '''
+    Get the contents of a section for display.
+    '''
     structure_id = request.args.get('structure_id', 0, type=int)
     section = Section.query.filter_by(structure_id=structure_id).first()
-    return jsonify(section_text=section.body, section_id=section.id)
+    synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
+    notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
+    return jsonify(section_text=section.body, 
+                   section_id=section.id, 
+                   synopsis_text=synopsis.body, 
+                   synopsis_id=synopsis.id, 
+                   notes_text=notes.body, 
+                   notes_id=notes.id)
 
 
 @app.route('/add_project', methods=['POST'])
@@ -53,21 +76,25 @@ def add_project():
     '''
     form = ProjectForm(request.form)
     if form.validate():
-        project = Project(name=request.form['project_name'], description=request.form['project_description'])
+        project = Project(name=request.form['name'], description=request.form['description'])
         db_session.add(project)
        
-        structure = Structure(title=request.form['project_name'], displayorder=1, project=project)
+        structure = Structure(title=request.form['name'], displayorder=1, project=project)
         db_session.add(structure)
         
-        section = Section(body="", structure=structure)
-        db_session.add(section)
+        db_session.add(Section(body="", structure=structure))
+        db_session.add(SectionSynopsis(body="", structure=structure))
+        db_session.add(SectionNotes(body="", structure=structure))
+        
         db_session.commit()
     
         flash('New Project Added')
         return redirect(url_for('show_content', project_id=project.id, structure_id=structure.id))
     
     projects = Project.query.all()
-    return render_template('index.html', projects=projects, form=form)
+    return render_template('index.html', 
+                           projects=projects, 
+                           form=form)
 
 
 @app.route('/add_node/<int:project_id>', methods=['POST'])
@@ -85,11 +112,16 @@ def add_node(project_id):
     structure = Structure(parent=parent, title='New Section', displayorder=displayorder, project=project)
     db_session.add(structure)
     
-    section = Section(body="", structure=structure)
-    db_session.add(section)
+    db_session.add(Section(body="", structure=structure))
+    db_session.add(SectionSynopsis(body="", structure=structure))
+    db_session.add(SectionNotes(body="", structure=structure))
+    
     db_session.commit()
 
-    return jsonify(id=structure.id, text=structure.title, displayorder=structure.displayorder, status_text="Hoorah! Section was added.")
+    return jsonify(id=structure.id, 
+                   text=structure.title, 
+                   displayorder=structure.displayorder, 
+                   status_text="Hoorah! Section was added.")
 
 
 @app.route('/delete_node', methods=['POST'])
@@ -130,7 +162,28 @@ def update_section():
     section.body = request.form['sectiontext']
     db_session.commit()
 
-    return jsonify(status=True, status_text="Save was a Complete Success!")
+    return jsonify(status=True, 
+                   status_text="Save was a Complete Success!")
+
+
+@app.route('/update_synopsis', methods=['POST'])
+def update_synopsis():
+    
+    synopsis = SectionSynopsis.query.filter(SectionSynopsis.id == request.form['synopsis_id']).first()
+    synopsis.body = request.form['synopsis_text']
+    db_session.commit()
+    return jsonify(status=True, 
+                   status_text="Hoorah! Synopsis was updated.")
+
+
+@app.route('/update_notes', methods=['POST'])
+def update_notes():
+    
+    notes = SectionNotes.query.filter(SectionNotes.id == request.form['notes_id']).first()
+    notes.body = request.form['notes_text']
+    db_session.commit()
+    return jsonify(status=True, 
+                   status_text="Hoorah! Notes was updated.")
 
 
 @app.route('/update_project/<int:project_id>', methods=['POST'])
@@ -146,7 +199,9 @@ def update_project(project_id):
 
     # Return the errors so that the caller can show them without refreshing
     # the page.    
-    return jsonify(status=False, name_errors=form.name.errors, description_errors=form.description.errors)
+    return jsonify(status=False, 
+                   name_errors=form.name.errors, 
+                   description_errors=form.description.errors)
 
 
 @app.route('/export_project/<int:project_id>', methods=['GET'])
@@ -179,7 +234,8 @@ def show_config():
     Get the current the current configuration and then show the template.
     '''
     config = Project.query.all()
-    return render_template('config.html', config=config)
+    return render_template('config.html', 
+                           config=config)
 
 
 @app.route('/save_config', methods=['POST'])

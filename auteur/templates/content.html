@@ -31,12 +31,12 @@
         </div>
       </div>
       
-      <div id=tree class="panel-body"></div>
+      <div id=tree><div class="panel-body"></div></div>
 
      </div>
   </div>
   
-  <div class=col-md-9>
+  <div class=col-md-6>
 
   	<form id="mainform">
       <div class="form-group">
@@ -46,6 +46,27 @@
       <button id="savetext" class="btn btn-primary btn-block" type="submit">Save</button>
     </form>
 
+  </div>
+  
+  <div class=col-md-3>
+    <div id="projectdetails" class="panel">
+      <div id="projectdisplay" class="panel-body bg-info">
+        <form id="synopsisform">
+          <div class="form-group">
+            <label for=synopsis_text class="control-label">Synopsis</label>
+            <textarea id=synopsis_text name=synopsis_text class="form-control" placeholder="Enter the synopsis for this section here.">{{ synopsis.body }}</textarea>
+          </div>
+          <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}"/>
+        </form>
+        <form id="notesform">
+          <div class="form-group">
+            <label for=notes_text class="control-label">Notes</label>
+            <textarea id=notes_text name=notes_text class="form-control" placeholder="Enter any notes for this section here.">{{ notes.body }}</textarea>
+          </div>
+          <input id="notes_id" name="notes_id" type="hidden" value="{{ notes.id }}"/>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -87,6 +108,24 @@
   $( "#mainform" ).submit(function( event ) {
     event.preventDefault();
     saveText({{ project.id }});
+  });
+  
+  $('#synopsisform :input').change(function(){
+    saveSynopsis();
+  });
+  
+  $( "#synopsisform" ).submit(function( event ) {
+    event.preventDefault();
+    saveSynopsis();
+  });
+  
+  $('#notesform :input').change(function(){
+    saveNotes();
+  });
+  
+  $( "#notesform" ).submit(function( event ) {
+    event.preventDefault();
+    saveNotes();
   });
 </script>
 {% endblock %}

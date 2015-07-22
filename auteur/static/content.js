@@ -17,6 +17,10 @@ $(document).ready(function() {
     }, function(data) {
       $('#section_id').val(data.section_id);
       CKEDITOR.instances.sectiontext.setData(data.section_text);
+      $('#synopsis_id').val(data.synopsis_id);
+      $('#synopsis_text').val(data.synopsis_text);
+      $('#notes_id').val(data.notes_id);
+      $('#notes_text').val(data.notes_text);
     });
   }).on('rename_node.jstree', function(evt, data) {
 
@@ -187,6 +191,40 @@ $(document).ready(function() {
       type : "POST",
       url : SCRIPT_ROOT + '/update_section',
       data : $("#mainform").serialize(),
+      complete : function(data) {
+        // Show the response text.
+        $('#statusbar').html(data.responseJSON.status_text);
+      }
+    });
+  };
+
+  /**
+   * Go to the server to update the synopsis information.
+   */
+  window.saveSynopsis = function() {
+
+    // Post the data to be saved and notify the user when it's done.
+    $.ajax({
+      type : "POST",
+      url : SCRIPT_ROOT + '/update_synopsis',
+      data : $("#synopsisform").serialize(),
+      complete : function(data) {
+        // Show the response text.
+        $('#statusbar').html(data.responseJSON.status_text);
+      }
+    });
+  };
+
+  /**
+   * Go to the server to update the synopsis information.
+   */
+  window.saveNotes = function() {
+
+    // Post the data to be saved and notify the user when it's done.
+    $.ajax({
+      type : "POST",
+      url : SCRIPT_ROOT + '/update_notes',
+      data : $("#notesform").serialize(),
       complete : function(data) {
         // Show the response text.
         $('#statusbar').html(data.responseJSON.status_text);
