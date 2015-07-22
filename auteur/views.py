@@ -78,13 +78,8 @@ def add_project():
     if form.validate():
         project = Project(name=request.form['name'], description=request.form['description'])
         db_session.add(project)
-       
-        structure = Structure(title=request.form['name'], displayorder=1, project=project)
-        db_session.add(structure)
-        
-        db_session.add(Section(body="", structure=structure))
-        db_session.add(SectionSynopsis(body="", structure=structure))
-        db_session.add(SectionNotes(body="", structure=structure))
+               
+        structure = create_node(project=project, title=request.form['name'])
         
         db_session.commit()
     
@@ -109,12 +104,8 @@ def add_node(project_id):
     parent = Structure.query.filter_by(id=parent_id).first()
     # Get the highest display order for this project so we can assign the new node to last place.
     displayorder = db_session.query(Structure.displayorder, func.max(Structure.displayorder)).filter_by(id=project_id).scalar() + 1
-    structure = Structure(parent=parent, title='New Section', displayorder=displayorder, project=project)
-    db_session.add(structure)
     
-    db_session.add(Section(body="", structure=structure))
-    db_session.add(SectionSynopsis(body="", structure=structure))
-    db_session.add(SectionNotes(body="", structure=structure))
+    structure = create_node(project=project, parent=parent, displayorder=displayorder)
     
     db_session.commit()
 
@@ -122,6 +113,18 @@ def add_node(project_id):
                    text=structure.title, 
                    displayorder=structure.displayorder, 
                    status_text="Hoorah! Section was added.")
+    
+    
+def create_node(project, parent=None, displayorder=1, title='New Section'):
+    '''
+    Create a new node along with anything that has to be attached.
+    '''
+    structure = Structure(parent=parent, title=title, displayorder=displayorder, project=project)
+    db_session.add(structure)
+    db_session.add(Section(body="", structure=structure))
+    db_session.add(SectionSynopsis(body="", structure=structure))
+    db_session.add(SectionNotes(body="", structure=structure))
+    return structure
 
 
 @app.route('/delete_node', methods=['POST'])
