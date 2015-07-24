@@ -77,7 +77,11 @@
                   { "id"     : {{ item.id }}, 
                     "parent" : {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %}, 
                     "text"   : "{{ item.title }}",
-                    "data"   : {"displayorder"  : {{ item.displayorder }} }
+                    "data"   : {"displayorder"  : {{ item.displayorder }} },
+                    "state"  : {
+                      "opened" : true,
+                      "selected" : {% if item.parent_id %} false {% else %} true {% endif %}
+                    }
                   },
                 {% else %}
                      { "id" : "0", "parent" : "#", "text" : "Oops, there's no structure.  Should create the first node when creating a new project." }
