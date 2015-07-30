@@ -5,7 +5,7 @@ Created on Apr 25, 2015
 
 @author: sbrooks
 '''
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey 
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from auteur.database import Base
 from sqlalchemy import orm
 from sqlalchemy.orm import relationship, backref
@@ -16,11 +16,17 @@ class Project(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
     description = Column(Text)
+    is_template = Column(Boolean)
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, is_template):
         self.name = name
         self.description = description
         self.short_description = self.get_short_description()
+        if is_template:
+            self.is_template = True
+        else:
+            self.is_template = False
+        
     
     @orm.reconstructor
     def init_on_load(self):

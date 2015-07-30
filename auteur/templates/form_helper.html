@@ -1,7 +1,23 @@
 {% macro render_field(field) %}
-  <div id="{{ field.id }}group" class="form-group {% if field.errors %}has-error{% endif %}">
+  <div id="{{ field.id }}group" class="{% if checkbox %} checkbox {% else %} form-group {% endif %} {% if field.errors %}has-error{% endif %}">
   {{ field.label(class="control-label") }}
   {{ field(**kwargs)|safe }}
+    <ul id="{{ field.id }}errors" class=errors>
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <li>{{ error|safe }}</li>
+    {% endfor %}
+  {% endif %}
+    </ul>
+  </div>
+{% endmacro %}
+
+{% macro render_field_checkbox(field) %}
+  <div id="{{ field.id }}group" class="checkbox {% if field.errors %}has-error{% endif %}">
+    <label>
+      {{ field(**kwargs)|safe }}
+      {{ field.label.text }}
+    </label>
     <ul id="{{ field.id }}errors" class=errors>
   {% if field.errors %}
     {% for error in field.errors %}

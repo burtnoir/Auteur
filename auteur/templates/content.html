@@ -7,10 +7,11 @@
     <div id="projectdetails" class="panel">
     
       <div id="projectdisplay" class="panel-body bg-info">
-        {% from "form_helper.html" import render_field %}
+        {% from "form_helper.html" import render_field, render_field_checkbox %}
         <form id="editprojectform">
           {{ render_field(form.name, class='form-control', id='name') }}
           {{ render_field(form.description, class='form-control', id='description') }}
+          {{ render_field_checkbox(form.is_template, id='is_template') }}
           <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">Export</a>
         </form>
       </div>

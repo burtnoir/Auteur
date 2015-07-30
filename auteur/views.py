@@ -22,6 +22,7 @@ from auteur.models import Project, Structure, Section, SectionSynopsis, \
 @app.route('/')
 def list_projects():
     form = ProjectForm(request.form)
+    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
     projects = Project.query.all()
     return render_template('index.html', 
                            projects=projects, 
@@ -34,6 +35,8 @@ def show_content(project_id, structure_id):
     # show the project with the given id, the id is an integer
     project = Project.query.filter_by(id=project_id).first()
     form = ProjectForm(obj=project)
+    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
+    del form.template
     structure = Structure.query.filter_by(project_id=project.id)
     
     # If the id wasn't passed (probably because the call is from the project page)
@@ -75,11 +78,12 @@ def add_project():
     Add a project.  Default a tree structure and sections to go with them.
     '''
     form = ProjectForm(request.form)
+    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
     if form.validate():
-        project = Project(name=request.form['name'], description=request.form['description'])
+        project = Project(name=form.name.data, description=form.description.data, is_template=form.is_template.data)
         db_session.add(project)
                
-        structure = create_node(project=project, title=request.form['name'])
+        structure = create_node(project=project, title=form.name.data)
         
         db_session.commit()
     
@@ -197,6 +201,10 @@ def update_project(project_id):
         project = Project.query.filter_by(id=project_id).first()
         project.name = request.form['name']
         project.description = request.form['description']
+        if request.form['is_template'] == 'y':
+            project.is_template = True
+        else:
+            project.is_template = False
         db_session.commit()
         return jsonify(status=True, status_text="Hoorah! Project details were updated.")
 
@@ -229,7 +237,7 @@ def export_project(project_id):
         stream_with_context(generate()),
         headers=headers
     )
-    
+
     
 @app.route('/show_config')
 def show_config():
@@ -246,3 +254,7 @@ def save_config():
 
     flash('Configuration Save was a Complete Success!')
     return redirect(url_for('show_config'))
+
+#@crsf.error_handler
+#def csrf_error(reason):
+#    return render_template('csrf_error.html', reason=reason), 400

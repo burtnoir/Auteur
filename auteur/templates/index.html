@@ -3,12 +3,21 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
+      <div class="row">
+      <div class="col-md-8">
         <h3 class="panel-title">Projects</h3>
       </div>
+<div class="col-md-4">
+        <form class="form-inline">
+          <div class="checkbox"><label for="templatefilter"><input type="checkbox" value="y" id="templatefilter" name="templatefilter">&nbsp;Show Templates</label></div>
+        </form>
+</div>
+</div>
+      </div>
   
-      <div class="list-group">
+      <div id="projectlist" class="list-group">
         {% for project in projects %}
-          <a class="list-group-item" href={{ url_for('show_content', project_id=project.id) }}>
+          <a class="list-group-item" data-is_template={{ project.is_template }} href={{ url_for('show_content', project_id=project.id) }}>
           <h4 class="list-group-item-heading">{{ project.name }}</h4>
           <p class="list-group-item-text">{{ project.short_description }}</p>
           </a>
@@ -27,16 +36,23 @@
       </div>
       <div class="panel-body">
         {% from "form_helper.html" import render_field %}
+        {% from "form_helper.html" import render_field_checkbox %}
         <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
-          <div class="form-group">
-            {{ render_field(form.name, class='form-control', id='name', placeholder='Enter the name here') }}
-          </div>
-          <div class="form-group">
-            {{ render_field(form.description, class='form-control', id='description', placeholder='Add a description here') }}
-          </div>
+          {{ form.csrf_token }}
+          {{ render_field(form.name, class='form-control', id='name', placeholder='Enter the name here') }}
+          {{ render_field(form.description, class='form-control', id='description', placeholder='Add a description here') }}
+          {{ render_field(form.template, class='form-control', id='template') }}
+          {{ render_field_checkbox(form.is_template, id='is_template') }}
           <button type="submit" class="btn btn-success">Start</button>
         </form>
       </div>
     </div>
   </div>
+  
+  <script src="{{ url_for('static', filename='index.js') }}"></script>
+  <script>
+    $('#templatefilter').click(function() {
+      templateFilter($(this).is(':checked'));
+    });
+  </script>
 {% endblock %}

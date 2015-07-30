@@ -3,12 +3,12 @@ Created on May 30, 2015
 
 @author: sbrooks
 '''
-from wtforms import Form, StringField, validators
+from flask_wtf import Form
+from wtforms import StringField, BooleanField, SelectField, TextAreaField, validators
 from auteur.database import db_session
 from auteur.models import Project
 from wtforms.validators import ValidationError
 from sqlalchemy.sql.functions import func
-from wtforms.fields.simple import TextAreaField
 
 class ProjectForm(Form):
     name = StringField('Name',
@@ -20,6 +20,8 @@ class ProjectForm(Form):
                          [
                           validators.DataRequired(message='You need to say something about the project.')
                           ])
+    template = SelectField('Template', coerce=int)
+    is_template = BooleanField("Project Is A Template?")
     
     def validate_project_name(form, field):
         '''
