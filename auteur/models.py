@@ -22,11 +22,7 @@ class Project(Base):
         self.name = name
         self.description = description
         self.short_description = self.get_short_description()
-        if is_template:
-            self.is_template = True
-        else:
-            self.is_template = False
-        
+        self.is_template = is_template        
     
     @orm.reconstructor
     def init_on_load(self):
