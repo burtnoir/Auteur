@@ -23,6 +23,7 @@ from auteur.models import Project, Structure, Section, SectionSynopsis, \
 def list_projects():
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
+    form.template.choices.insert(0, (0, '-- Choose a Template --'))
     projects = Project.query.all()
     return render_template('index.html', 
                            projects=projects, 
@@ -35,7 +36,6 @@ def show_content(project_id, structure_id):
     # show the project with the given id, the id is an integer
     project = Project.query.filter_by(id=project_id).first()
     form = ProjectForm(obj=project)
-    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
     del form.template
     structure = Structure.query.filter_by(project_id=project.id)
     
@@ -79,21 +79,53 @@ def add_project():
     '''
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
+    form.template.choices.insert(0, (0, '-- Choose a Template --'))
     if form.validate():
         project = Project(name=form.name.data, description=form.description.data, is_template=form.is_template.data)
         db_session.add(project)
-               
-        structure = create_node(project=project, title=form.name.data)
+
+        if form.template.data != 0:
+            copy_from_template(project, form.template.data)
+        else:
+            create_node(project=project, title=form.name.data)
         
         db_session.commit()
     
         flash('New Project Added')
-        return redirect(url_for('show_content', project_id=project.id, structure_id=structure.id))
+        return redirect(url_for('show_content', project_id=project.id, structure_id=None))
     
     projects = Project.query.all()
     return render_template('index.html', 
                            projects=projects, 
                            form=form)
+
+
+def copy_from_template(project, template_id):
+    '''
+    Get the template contents and add them to the new project.
+    '''
+    structure_map = {}
+    for structure, section, synopsis, notes in \
+            db_session.query(Structure, Section, SectionSynopsis, SectionNotes).\
+            filter(Structure.id == Section.structure_id).\
+            filter(Structure.id == SectionSynopsis.structure_id).\
+            filter(Structure.id == SectionNotes.structure_id).\
+            filter(Structure.project_id == template_id).order_by(Structure.parent_id).all():
+        
+        # Check the map to find the new parent.
+        new_parent = None
+        if structure.parent and structure.parent_id in structure_map:
+            new_parent = structure_map[structure.parent_id]
+        # Create the new structure element using the discovered parent.  If nothing was found
+        # then it has no parent and so is a root element.
+        new_structure = Structure(parent=new_parent, title=structure.title, displayorder=structure.displayorder, project=project)
+        db_session.add(new_structure)
+        # Every time a structure record is processed we add it to the map to link the 
+        # template element to the newly created element.
+        structure_map[structure.id] = new_structure
+        db_session.add(Section(body=section.body, structure=new_structure))
+        db_session.add(SectionSynopsis(body=synopsis.body, structure=new_structure))
+        db_session.add(SectionNotes(body=notes.body, structure=new_structure))
 
 
 @app.route('/add_node/<int:project_id>', methods=['POST'])
@@ -168,7 +200,7 @@ def update_section():
     section = Section.query.filter(Section.id == request.form['section_id']).first()
     section.body = request.form['sectiontext']
     db_session.commit()
-
+    
     return jsonify(status=True, 
                    status_text="Save was a Complete Success!")
 

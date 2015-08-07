@@ -21,7 +21,7 @@ class ProjectForm(Form):
                           validators.DataRequired(message='You need to say something about the project.')
                           ])
     template = SelectField('Template', coerce=int)
-    is_template = BooleanField("Project Is A Template?")
+    is_template = BooleanField("Project Is a Template?")
     
     def validate_project_name(form, field):
         '''
