@@ -3,16 +3,8 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-      <div class="row">
-      <div class="col-md-8">
-        <h3 class="panel-title">Projects</h3>
-      </div>
-<div class="col-md-4">
-        <form class="form-inline">
-          <div class="checkbox"><label for="templatefilter"><input type="checkbox" value="y" id="templatefilter" name="templatefilter">&nbsp;Show Templates</label></div>
-        </form>
-</div>
-</div>
+        <button id="showProjects" type="button" class="btn btn-success">Show Projects</button>
+        <button id="showTemplates" type="button" class="btn btn-success pull-right">Show Templates</button>
       </div>
   
       <div id="projectlist" class="list-group">
@@ -50,9 +42,4 @@
   </div>
   
   <script src="{{ url_for('static', filename='index.js') }}"></script>
-  <script>
-    $('#templatefilter').click(function() {
-      templateFilter($(this).is(':checked'));
-    });
-  </script>
 {% endblock %}

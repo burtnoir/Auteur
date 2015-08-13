@@ -229,14 +229,12 @@ def update_notes():
 def update_project(project_id):
     
     form = ProjectForm(request.form)
+    del form.template
     if form.validate():
         project = Project.query.filter_by(id=project_id).first()
-        project.name = request.form['name']
-        project.description = request.form['description']
-        if request.form['is_template'] == 'y':
-            project.is_template = True
-        else:
-            project.is_template = False
+        project.name = form.name.data
+        project.description = form.description.data
+        project.is_template = form.is_template.data
         db_session.commit()
         return jsonify(status=True, status_text="Hoorah! Project details were updated.")
 
