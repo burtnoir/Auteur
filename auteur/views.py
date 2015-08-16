@@ -17,13 +17,19 @@ from auteur.database import db_session
 from auteur.forms import ProjectForm
 from auteur.models import Project, Structure, Section, SectionSynopsis, \
     SectionNotes
+from auteur import babel
+import auteur
+from flask_babel import gettext
 
+@babel.localeselector
+def get_locale():
+    return request.accept_languages.best_match(auteur.app.config['LANGUAGES'].keys())
 
 @app.route('/')
 def list_projects():
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
-    form.template.choices.insert(0, (0, '-- Choose a Template --'))
+    form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
     projects = Project.query.all()
     return render_template('index.html', 
                            projects=projects, 
@@ -79,7 +85,7 @@ def add_project():
     '''
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
-    form.template.choices.insert(0, (0, '-- Choose a Template --'))
+    form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
     if form.validate():
         project = Project(name=form.name.data, description=form.description.data, is_template=form.is_template.data)
         db_session.add(project)
@@ -148,7 +154,7 @@ def add_node(project_id):
     return jsonify(id=structure.id, 
                    text=structure.title, 
                    displayorder=structure.displayorder, 
-                   status_text="Hoorah! Section was added.")
+                   status_text=gettext("Hoorah! Section was added."))
     
     
 def create_node(project, parent=None, displayorder=1, title='New Section'):
@@ -176,7 +182,7 @@ def delete_node():
         db_session.delete(structure)
         db_session.commit()
 
-    return jsonify(status_text="Hoorah! Section was deleted.")
+    return jsonify(status_text=gettext("Hoorah! Section was deleted."))
 
 
 @app.route('/update_node', methods=['POST'])
@@ -192,7 +198,7 @@ def update_node():
     structure.title = node_text
     db_session.commit()
 
-    return jsonify(status_text="Hoorah! Section was updated.")
+    return jsonify(status_text=gettext("Hoorah! Section was updated."))
 
 
 @app.route('/update_section', methods=['POST'])
@@ -202,7 +208,7 @@ def update_section():
     db_session.commit()
     
     return jsonify(status=True, 
-                   status_text="Save was a Complete Success!")
+                   status_text=gettext("Save was a Complete Success!"))
 
 
 @app.route('/update_synopsis', methods=['POST'])
@@ -212,7 +218,7 @@ def update_synopsis():
     synopsis.body = request.form['synopsis_text']
     db_session.commit()
     return jsonify(status=True, 
-                   status_text="Hoorah! Synopsis was updated.")
+                   status_text=gettext("Hoorah! Synopsis was updated."))
 
 
 @app.route('/update_notes', methods=['POST'])
@@ -222,7 +228,7 @@ def update_notes():
     notes.body = request.form['notes_text']
     db_session.commit()
     return jsonify(status=True, 
-                   status_text="Hoorah! Notes was updated.")
+                   status_text=gettext("Hoorah! Notes was updated."))
 
 
 @app.route('/update_project/<int:project_id>', methods=['POST'])
@@ -236,7 +242,7 @@ def update_project(project_id):
         project.description = form.description.data
         project.is_template = form.is_template.data
         db_session.commit()
-        return jsonify(status=True, status_text="Hoorah! Project details were updated.")
+        return jsonify(status=True, status_text=gettext("Hoorah! Project details were updated."))
 
     # Return the errors so that the caller can show them without refreshing
     # the page.    
@@ -282,7 +288,7 @@ def show_config():
 @app.route('/save_config', methods=['POST'])
 def save_config():
 
-    flash('Configuration Save was a Complete Success!')
+    flash(gettext('Configuration Save was a Complete Success!'))
     return redirect(url_for('show_config'))
 
 #@crsf.error_handler

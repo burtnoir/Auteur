@@ -12,7 +12,7 @@
           {{ render_field(form.name, class='form-control', id='name') }}
           {{ render_field(form.description, class='form-control', id='description') }}
           {{ render_field_checkbox(form.is_template, id='is_template') }}
-          <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">Export</a>
+          <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export') }}</a>
         </form>
       </div>
     </div>
@@ -21,13 +21,13 @@
       <div class="panel-heading">
         <div class="btn-group btn-group-justified" role="group">
           <div class="btn-group" role="group">
-            <button id="tree_add" type="button" class="btn btn-default">Add</button>
+            <button id="tree_add" type="button" class="btn btn-default">{{ _('Add') }}</button>
           </div>
           <div class="btn-group" role="group">
-            <button id="tree_rename" type="button" class="btn btn-default">Rename</button>
+            <button id="tree_rename" type="button" class="btn btn-default">{{ _('Rename') }}</button>
           </div>
           <div class="btn-group" role="group">
-            <button id="tree_delete" type="button" class="btn btn-default">Delete</button>
+            <button id="tree_delete" type="button" class="btn btn-default">{{ _('Delete') }}</button>
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@
         <textarea id=sectiontext name=sectiontext>{{ section.body }}</textarea>
         <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}"/>
       </div>
-      <button id="savetext" class="btn btn-primary btn-block" type="submit">Save</button>
+      <button id="savetext" class="btn btn-primary btn-block" type="submit">{{ _('Save') }}</button>
     </form>
 
   </div>
@@ -54,15 +54,15 @@
       <div id="projectdisplay" class="panel-body bg-info">
         <form id="synopsisform">
           <div class="form-group">
-            <label for=synopsis_text class="control-label">Synopsis</label>
-            <textarea id=synopsis_text name=synopsis_text class="form-control" placeholder="Enter the synopsis for this section here.">{{ synopsis.body }}</textarea>
+            <label for=synopsis_text class="control-label">{{ _('Synopsis') }}</label>
+            <textarea id=synopsis_text name=synopsis_text class="form-control" placeholder="{{ _('Enter the synopsis for this section here.') }}">{{ synopsis.body }}</textarea>
           </div>
           <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}"/>
         </form>
         <form id="notesform">
           <div class="form-group">
-            <label for=notes_text class="control-label">Notes</label>
-            <textarea id=notes_text name=notes_text class="form-control" placeholder="Enter any notes for this section here.">{{ notes.body }}</textarea>
+            <label for=notes_text class="control-label">{{ _('Notes') }}</label>
+            <textarea id=notes_text name=notes_text class="form-control" placeholder="{{ _('Enter any notes for this section here.') }}">{{ notes.body }}</textarea>
           </div>
           <input id="notes_id" name="notes_id" type="hidden" value="{{ notes.id }}"/>
         </form>

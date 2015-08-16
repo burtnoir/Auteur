@@ -3,8 +3,8 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-        <button id="showProjects" type="button" class="btn btn-success">Show Projects</button>
-        <button id="showTemplates" type="button" class="btn btn-success pull-right">Show Templates</button>
+        <button id="showProjects" type="button" class="btn btn-success">{{ _('Show Projects') }}</button>
+        <button id="showTemplates" type="button" class="btn btn-success pull-right">{{ _('Show Templates') }}</button>
       </div>
   
       <div id="projectlist" class="list-group">
@@ -27,12 +27,12 @@
     <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
       <div class="panel panel-info">
         <div class="panel-heading">
-          <button type="submit" class="btn btn-success">Create a New Project</button>
+          <button type="submit" class="btn btn-success">{{ _('Create a New Project') }}</button>
         </div>
         <div class="panel-body">
           {{ form.csrf_token }}
-          {{ render_field(form.name, class='form-control', id='name', placeholder='Enter the name here') }}
-          {{ render_field(form.description, class='form-control', id='description', placeholder='Add a description here') }}
+          {{ render_field(form.name, class='form-control', id='name', placeholder=_('Enter the name here')) }}
+          {{ render_field(form.description, class='form-control', id='description', placeholder=_('Add a description here')) }}
           {{ render_field(form.template, class='form-control', id='template') }}
           {{ render_field_checkbox(form.is_template, id='is_template') }}
         </div>
