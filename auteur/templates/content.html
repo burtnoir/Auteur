@@ -5,7 +5,7 @@
   <div class=col-md-3>
 
     <div id="projectdetails" class="panel">
-    
+
       <div id="projectdisplay" class="panel-body bg-info">
         {% from "form_helper.html" import render_field, render_field_checkbox %}
         <form id="editprojectform">
@@ -31,15 +31,15 @@
           </div>
         </div>
       </div>
-      
+
       <div id=tree><div class="panel-body"></div></div>
 
      </div>
   </div>
-  
+
   <div class=col-md-6>
 
-  	<form id="mainform">
+    <form id="mainform">
       <div class="form-group">
         <textarea id=sectiontext name=sectiontext>{{ section.body }}</textarea>
         <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}"/>
@@ -48,7 +48,7 @@
     </form>
 
   </div>
-  
+
   <div class=col-md-3>
     <div id="projectdetails" class="panel">
       <div id="projectdisplay" class="panel-body bg-info">
@@ -75,8 +75,8 @@
 <script>
   var treeData = [
                 {% for item in structure %}
-                  { "id"     : {{ item.id }}, 
-                    "parent" : {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %}, 
+                  { "id"     : {{ item.id }},
+                    "parent" : {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
                     "text"   : "{{ item.title }}",
                     "data"   : {"displayorder"  : {{ item.displayorder }} },
                     "state"  : {
@@ -88,11 +88,11 @@
                      { "id" : "0", "parent" : "#", "text" : "Oops, there's no structure.  Should create the first node when creating a new project." }
                 {% endfor %}
                 ];
-                
+
   $('#tree_add').click(function(){
     treeAdd({{ project.id }});
   });
-  
+
   $('#tree_rename').click(function() {
     treeRename();
   });
@@ -100,34 +100,34 @@
   $('#tree_delete').click(function() {
     treeDelete();
   });
-  
+
   $('#editprojectform :input').change(function(){
     editProject({{ project.id }});
   });
-  
+
   $( "#editprojectform" ).submit(function( event ) {
     event.preventDefault();
     editProject({{ project.id }});
   });
-    
+
   $( "#mainform" ).submit(function( event ) {
     event.preventDefault();
     saveText({{ project.id }});
   });
-  
+
   $('#synopsisform :input').change(function(){
     saveSynopsis();
   });
-  
+
   $( "#synopsisform" ).submit(function( event ) {
     event.preventDefault();
     saveSynopsis();
   });
-  
+
   $('#notesform :input').change(function(){
     saveNotes();
   });
-  
+
   $( "#notesform" ).submit(function( event ) {
     event.preventDefault();
     saveNotes();
