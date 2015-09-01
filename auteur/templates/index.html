@@ -3,7 +3,18 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-        <button id="showProjects" type="button" class="btn btn-success">{{ _('Show Projects') }}</button>
+        
+        <div class="btn-group">
+          <button id="showProjects" type="button" class="btn btn-success">{{ _('Show Projects') }}</button>
+          <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="caret"></span>
+            <span class="sr-only">{{ _('Toggle Dropdown') }}</span>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a  id="showDeletedProjects" href="#">{{ _('Show Deleted Projects') }}</a></li>
+          </ul>
+        </div>
+        
         <button id="showTemplates" type="button" class="btn btn-success pull-right">{{ _('Show Templates') }}</button>
       </div>
   

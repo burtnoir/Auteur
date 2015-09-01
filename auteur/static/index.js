@@ -9,8 +9,7 @@ $(document)
 		    window.templateFilter = function(is_template) {
 
 			// Post the data to be saved and notify the user when
-			// it's
-			// done.
+			// it's done.
 			$('#projectlist > a')
 				.each(
 					function(i) {
@@ -31,6 +30,10 @@ $(document)
 		    });
 
 		    $('#showProjects').click(function() {
+			templateFilter(false);
+		    });
+
+		    $('#showDeletedProjects').click(function() {
 			templateFilter(false);
 		    });
 
