@@ -17,12 +17,14 @@ class Project(Base):
     name = Column(String(50))
     description = Column(Text)
     is_template = Column(Boolean)
+    is_deleted = Column(Boolean)
 
-    def __init__(self, name, description, is_template):
+    def __init__(self, name, description, is_template, is_deleted=False):
         self.name = name
         self.description = description
         self.short_description = self.get_short_description()
-        self.is_template = is_template        
+        self.is_template = is_template
+        self.is_deleted = is_deleted
     
     @orm.reconstructor
     def init_on_load(self):

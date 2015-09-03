@@ -26,11 +26,40 @@ def get_locale():
     return request.accept_languages.best_match(auteur.app.config['LANGUAGES'].keys())
 
 @app.route('/')
-def list_projects():
+@app.route('/get_project_list', methods=['GET'])
+def get_project_list():
+
+    projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template==False).all()
+    return get_project_list_helper(projects)
+
+
+@app.route('/get_template_list', methods=['GET'])
+def get_template_list():
+
+    projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template).all()
+    return get_project_list_helper(projects)
+
+
+@app.route('/get_deleted_template_list', methods=['GET'])
+def get_deleted_template_list():
+
+    projects = Project.query.filter(Project.is_deleted).filter(Project.is_template).all()
+    return get_project_list_helper(projects)
+
+
+@app.route('/get_deleted_project_list', methods=['GET'])
+def get_deleted_project_list():
+    '''
+    Get a list of deleted projects for display.
+    '''
+    projects = Project.query.filter(Project.is_deleted).filter(Project.is_template==False).all()
+    return get_project_list_helper(projects)
+
+
+def get_project_list_helper(projects):
     form = ProjectForm(request.form)
-    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
+    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template).filter(Project.is_deleted==False)]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
-    projects = Project.query.all()
     return render_template('index.html', 
                            projects=projects, 
                            form=form)

@@ -5,6 +5,7 @@ from auteur.database import db_session
 from auteur.database import init_db, drop_db
 from auteur.models import Project, Structure, Section, SectionSynopsis, \
     SectionNotes
+from _ast import Delete
 
 
 drop_db()
@@ -76,6 +77,50 @@ root_structure = Structure(title="Template leaf.", displayorder=1, project=proje
 db_session.add(root_structure)
 
 db_session.add(Section(body="Template leaf body text.", structure=root_structure))
+db_session.add(SectionSynopsis(body="", structure=root_structure))
+db_session.add(SectionNotes(body="", structure=root_structure))
+
+db_session.commit()
+
+
+# Create the third (deleted) project
+project = Project(name='Project that has been deleted.', description='This project was deleted - but don''t worry because it''s only a logical Delete.', is_template=False, is_deleted=True)
+db_session.add(project)
+
+root_structure = Structure(title="Deleted project structure leaf.", displayorder=1, project=project)
+db_session.add(root_structure)
+
+db_session.add(Section(body="deleted project and structure leaf body text.", structure=root_structure))
+db_session.add(SectionSynopsis(body="Deleted project synopsis text.", structure=root_structure))
+db_session.add(SectionNotes(body="", structure=root_structure))
+
+
+structure = Structure(title="Second leaf.", project=project, displayorder=2, parent=root_structure)
+db_session.add(structure)
+
+db_session.add(Section(body="Second leaf body text.", structure=structure))
+db_session.add(SectionSynopsis(body="Second leaf on deleted project synopsis text.", structure=structure))
+db_session.add(SectionNotes(body="", structure=structure))
+
+
+structure = Structure(title="Third leaf.", project=project, displayorder=3, parent=root_structure)
+db_session.add(structure)
+
+db_session.add(Section(body="Third leaf body text.", structure=structure))
+db_session.add(SectionSynopsis(body="Second leaf synopsis text.", structure=structure))
+db_session.add(SectionNotes(body="And some notes go here.", structure=structure))
+
+db_session.commit()
+
+
+# Create a deleted template - which is really a project
+project = Project(name='Deleted Template', description='A description for the deleted template.', is_template=True, is_deleted=True)
+db_session.add(project)
+
+root_structure = Structure(title="Template leaf.", displayorder=1, project=project)
+db_session.add(root_structure)
+
+db_session.add(Section(body="Template leaf body text.  My project has been deleted.", structure=root_structure))
 db_session.add(SectionSynopsis(body="", structure=root_structure))
 db_session.add(SectionNotes(body="", structure=root_structure))
 

@@ -1,55 +1,57 @@
-{% extends "layout.html" %}
-{% block body %}
-  <div class="col-md-6">
+{% extends "layout.html" %} {% block body %}
+<div class="col-md-6">
     <div class="panel panel-info">
-      <div class="panel-heading">
-        
-        <div class="btn-group">
-          <button id="showProjects" type="button" class="btn btn-success">{{ _('Show Projects') }}</button>
-          <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span class="caret"></span>
-            <span class="sr-only">{{ _('Toggle Dropdown') }}</span>
-          </button>
-          <ul class="dropdown-menu">
-            <li><a  id="showDeletedProjects" href="#">{{ _('Show Deleted Projects') }}</a></li>
-          </ul>
-        </div>
-        
-        <button id="showTemplates" type="button" class="btn btn-success pull-right">{{ _('Show Templates') }}</button>
-      </div>
-  
-      <div id="projectlist" class="list-group">
-        {% for project in projects %}
-          <a class="list-group-item" data-is_template={{ project.is_template }} href={{ url_for('show_content', project_id=project.id) }}>
-          <h4 class="list-group-item-heading">{{ project.name }}</h4>
-          <p class="list-group-item-text">{{ project.short_description }}</p>
-          </a>
-        {% else %}
-          <em>Unbelievable.  No entries here so far</em>
-        {% endfor %}
-      </div>
-  
-    </div>
-  </div>
-  
-  <div class="col-md-6">
-    {% from "form_helper.html" import render_field %}
-    {% from "form_helper.html" import render_field_checkbox %}
-    <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
-      <div class="panel panel-info">
         <div class="panel-heading">
-          <button type="submit" class="btn btn-success">{{ _('Create a New Project') }}</button>
+
+            <div class="btn-group">
+                <a id="showProjects" type="button" class="btn btn-success" href="{{ url_for('get_project_list') }}">{{ _('Show Projects') }}</a>
+                <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                    <span class="sr-only">{{ _('Toggle Dropdown') }}</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a id="showDeletedProjects" href="{{ url_for('get_deleted_project_list') }}">{{ _('Show Deleted Projects') }}</a></li>
+                </ul>
+            </div>
+
+            <div class="btn-group pull-right">
+                <a id="showTemplates" type="button" class="btn btn-success" href="{{ url_for('get_template_list') }}">{{ _('Show Templates') }}</a>
+                <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                    <span class="sr-only">{{ _('Toggle Dropdown') }}</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a id="showDeletedTemplates" href="{{ url_for('get_deleted_template_list') }}">{{ _('Show Deleted Templates') }}</a></li>
+                </ul>
+            </div>
+
         </div>
-        <div class="panel-body">
-          {{ form.csrf_token }}
-          {{ render_field(form.name, class='form-control', id='name', placeholder=_('Enter the name here')) }}
-          {{ render_field(form.description, class='form-control', id='description', placeholder=_('Add a description here')) }}
-          {{ render_field(form.template, class='form-control', id='template') }}
-          {{ render_field_checkbox(form.is_template, id='is_template') }}
+
+        <div id="projectlist" class="list-group">
+            {% for project in projects %}
+            <a class="list-group-item" data-is_template={{ project.is_template }} href={{ url_for( 'show_content', project_id=project.id) }}>
+                <h4 class="list-group-item-heading">{{ project.name }}</h4>
+                <p class="list-group-item-text">{{ project.short_description }}</p>
+            </a>
+            {% else %}
+            <em>Unbelievable.  No entries here so far</em> {% endfor %}
+            <div id="deletedProjectList"></div>
         </div>
-      </div>
+
+    </div>
+</div>
+
+<div class="col-md-6">
+    {% from "form_helper.html" import render_field %} {% from "form_helper.html" import render_field_checkbox %}
+    <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <button type="submit" class="btn btn-success">{{ _('Create a New Project') }}</button>
+            </div>
+            <div class="panel-body">
+                {{ form.csrf_token }} {{ render_field(form.name, class='form-control', id='name', placeholder=_('Enter the name here')) }} {{ render_field(form.description, class='form-control', id='description', placeholder=_('Add a description here')) }} {{ render_field(form.template, class='form-control', id='template') }} {{ render_field_checkbox(form.is_template, id='is_template') }}
+            </div>
+        </div>
     </form>
-  </div>
-  
-  <script src="{{ url_for('static', filename='index.js') }}"></script>
+</div>
 {% endblock %}
