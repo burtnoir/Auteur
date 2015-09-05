@@ -1,7 +1,7 @@
 $(document).ready(
     function () {
 
-        var deleteProjectHelper = function(project_id, endpoint){
+        var deleteProjectHelper = function(project_id, endpoint, parent){
             $.ajax({
                 type: "POST",
                 url: SCRIPT_ROOT + endpoint + project_id,
@@ -11,7 +11,7 @@ $(document).ready(
                     var r = data.responseJSON;
                     if (r.status) {
                         // If everything went well then remove the deleted project from the list.
-
+                        parent.hide();
                         $('#statusbar').html(r.status_text);
                     }
                 }
@@ -21,12 +21,12 @@ $(document).ready(
         /**
          * Go to the server to update the project information.
          */
-        var deleteProject = function (project_id) {
-            deleteProjectHelper(project_id, '/delete_project/');
+        var deleteProject = function (project_id, parent) {
+            deleteProjectHelper(project_id, '/delete_project/', parent);
         };
         
-        var undeleteProject = function (project_id) {
-            deleteProjectHelper(project_id, '/undelete_project/');
+        var undeleteProject = function (project_id, parent) {
+            deleteProjectHelper(project_id, '/undelete_project/', parent);
         };
 
 
@@ -34,9 +34,9 @@ $(document).ready(
         $('.deleteProject').on('click', function (event) {
             // Next step is to make an ajax call to to the deletion or undeletion.
             if(this.dataset.is_deleted === 'False'){
-                deleteProject(this.dataset.project_id);
+                deleteProject(this.dataset.project_id, $(this).parent());
             } else {
-                undeleteProject(this.dataset.project_id);
+                undeleteProject(this.dataset.project_id, $(this).parent());
             }
 
             // Need to stop the bubbling or it will do the delete and then go to the project.
