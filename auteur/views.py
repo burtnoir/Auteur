@@ -178,13 +178,13 @@ def delete_project(project_id):
 @app.route('/undelete_project/<int:project_id>', methods=['POST'])
 def undelete_project(project_id):
     '''
-    Delete the project.
+    Undelete the project.
     '''
-    project = Project.query.filter(Project.id==project_id)
+    project = Project.query.filter(Project.id==project_id).first()
     project.is_deleted = False
     db_session.commit()
 
-    return jsonify(status_text=gettext("Hoorah! Project was undeleted."))
+    return jsonify(status=True, status_text=gettext("Hoorah! Project was undeleted."))
 
 
 @app.route('/add_node/<int:project_id>', methods=['POST'])
