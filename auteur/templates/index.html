@@ -30,6 +30,7 @@
         <div id="projectlist" class="list-group">
             {% for project in projects %}
             <a class="list-group-item" data-is_template={{ project.is_template }} href={{ url_for( 'show_content', project_id=project.id) }}>
+                <button type="button" class="close deleteProject" data-project_id="{{ project.id }}" data-is_deleted={{ project.is_deleted }} aria-label="{{ _('Delete') }}"><span aria-hidden="true">&times;</span></button>
                 <h4 class="list-group-item-heading">{{ project.name }}</h4>
                 <p class="list-group-item-text">{{ project.short_description }}</p>
             </a>
@@ -54,4 +55,6 @@
         </div>
     </form>
 </div>
+
+<script src="{{ url_for('static', filename='index.js') }}"></script>
 {% endblock %}

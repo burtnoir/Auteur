@@ -1,13 +1,6 @@
 $(document).ready(
     function () {
 
-        csrfProtect = function (xhr, settings) {
-            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-                var csrftoken = $('meta[name=csrf-token]').attr('content');
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            }
-        };
-
         var resizer = function (ed) {
             var h = $('body').height(),
                 t = $('#topnav').height(),
@@ -218,7 +211,7 @@ $(document).ready(
         };
 
         /**
-         * Go to the server to update the project information.
+         * Go to the server to save the section text.
          */
         window.saveText = function () {
 

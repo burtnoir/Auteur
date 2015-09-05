@@ -163,6 +163,30 @@ def copy_from_template(project, template_id):
         db_session.add(SectionNotes(body=notes.body, structure=new_structure))
 
 
+@app.route('/delete_project/<int:project_id>', methods=['POST'])
+def delete_project(project_id):
+    '''
+    Delete the project.
+    '''
+    project = Project.query.filter(Project.id==project_id).first()
+    project.is_deleted = True
+    db_session.commit()
+
+    return jsonify(status=True, status_text=gettext("Hoorah! Project was deleted."))
+
+
+@app.route('/undelete_project/<int:project_id>', methods=['POST'])
+def undelete_project(project_id):
+    '''
+    Delete the project.
+    '''
+    project = Project.query.filter(Project.id==project_id)
+    project.is_deleted = False
+    db_session.commit()
+
+    return jsonify(status_text=gettext("Hoorah! Project was undeleted."))
+
+
 @app.route('/add_node/<int:project_id>', methods=['POST'])
 def add_node(project_id):
     '''
@@ -266,7 +290,7 @@ def update_project(project_id):
     form = ProjectForm(request.form)
     del form.template
     if form.validate():
-        project = Project.query.filter_by(id=project_id).first()
+        project = Project.query.filter(id=project_id).first()
         project.name = form.name.data
         project.description = form.description.data
         project.is_template = form.is_template.data
