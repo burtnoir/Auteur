@@ -12,7 +12,8 @@
           {{ render_field(form.name, class='form-control', id='name') }}
           {{ render_field(form.description, class='form-control', id='description') }}
           {{ render_field_checkbox(form.is_template, id='is_template') }}
-          <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export') }}</a>
+          <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export HTML') }}</a>
+          <a id="export_pdf" href="{{ url_for('export_project_pdf', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export PDF') }}</a>
         </form>
       </div>
     </div>

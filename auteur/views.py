@@ -20,6 +20,8 @@ from auteur.models import Project, Structure, Section, SectionSynopsis, \
 from auteur import babel
 import auteur
 from flask_babel import gettext
+from flask_weasyprint import HTML, render_pdf
+#from pdfs import create_pdf
 
 @babel.localeselector
 def get_locale():
@@ -290,7 +292,7 @@ def update_project(project_id):
     form = ProjectForm(request.form)
     del form.template
     if form.validate():
-        project = Project.query.filter(id=project_id).first()
+        project = Project.query.filter(Project.id==project_id).first()
         project.name = form.name.data
         project.description = form.description.data
         project.is_template = form.is_template.data
@@ -310,22 +312,34 @@ def export_project(project_id):
     Export the project to a file for the user to download.
     It will be a basic dump to start with to show the idea.
     '''
-    def generate():
-        for instance in db_session.query(Structure).filter_by(project_id=project_id).order_by(Structure.displayorder):
-            section = Section.query.filter_by(structure_id=instance.id).first()
-            yield section.body
-    
-    # add a filename
-    project = Project.query.filter_by(id=project_id).first()
+    project = Project.query.filter(Project.id==project_id).first()
     headers = Headers()
+    # add a filename
     headers.add('Content-Disposition', 'attachment', filename=(project.name + '.html'))
 
     # stream the response as the data is generated
     # default mimetype is text/html which is what we want in this case.
     return Response(
-        stream_with_context(generate()),
+        stream_with_context(generate(project_id)),
         headers=headers
     )
+    
+    
+@app.route('/export_project_pdf/<int:project_id>', methods=['GET'])
+def export_project_pdf(project_id):
+    ''' 
+    Make a PDF straight from HTML in a string and send it to the user.
+    '''
+    html = ''
+    for value in generate(project_id):
+        html += value
+    return render_pdf(HTML(string=html))
+
+
+def generate(project_id):
+    for instance in db_session.query(Structure).filter(Structure.project_id==project_id).order_by(Structure.displayorder):
+        section = Section.query.filter(Section.structure_id==instance.id).first()
+        yield section.body
 
     
 @app.route('/show_config')
