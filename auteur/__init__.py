@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
-
 from flask import Flask
 from flask_wtf.csrf import CsrfProtect
 from flask_babel import Babel
 from flask_debugtoolbar import DebugToolbarExtension
 
-# Configuration
-DEBUG = True
-SECRET_KEY = 'development key'
-USERNAME = 'admin'
-PASSWORD = 'default'
-DATABASE = 'sqlite:////tmp/auteur.db'
-LANGUAGES = {
-    'en': 'English',
-    'es': 'Español',
-    'fr': 'Francais'
-}
-
 csrf = CsrfProtect()
 
 # create our little application :)
 app = Flask(__name__)
-app.config.from_object(__name__)
+app.config.from_object('config')
+#app.config.from_object(__name__)
 
 csrf.init_app(app)
 babel = Babel(app)

@@ -11,9 +11,24 @@
         <form id="editprojectform">
           {{ render_field(form.name, class='form-control', id='name') }}
           {{ render_field(form.description, class='form-control', id='description') }}
-          {{ render_field_checkbox(form.is_template, id='is_template') }}
-          <a id="export" href="{{ url_for('export_project', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export HTML') }}</a>
-          <a id="export_pdf" href="{{ url_for('export_project_pdf', project_id=project.id) }}" role="button" class="btn btn-primary btn-block">{{ _('Export PDF') }}</a>
+          <div class="row">
+              <div class="col-md-8">
+            {{ render_field_checkbox(form.is_template, id='is_template') }}
+            </div>
+            <div class="col-md-4">
+            <div class="dropdown">
+              <button class="btn btn-primary dropdown-toggle" type="button" id="exportMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                {{ _('Export') }}
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="exportMenu">
+                <li><a id="export" href="{{ url_for('export_project', project_id=project.id) }}">{{ _('HTML') }}</a></li>
+                <li><a id="export_pdf" href="{{ url_for('export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</a></li>
+              </ul>
+            </div>
+            </div>  
+              </div>
+            
         </form>
       </div>
     </div>
