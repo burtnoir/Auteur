@@ -5,19 +5,16 @@ Created on Apr 25, 2015
 
 @author: sbrooks
 '''
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
-from auteur.database import Base
-from sqlalchemy import orm
-from sqlalchemy.orm import relationship, backref
+from auteur import db
 from datetime import datetime
     
-class Project(Base):
+class Project(db.Model):
     __tablename__ = 'project'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    description = Column(Text)
-    is_template = Column(Boolean)
-    is_deleted = Column(Boolean)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    description = db.Column(db.Text)
+    is_template = db.Column(db.Boolean)
+    is_deleted = db.Column(db.Boolean)
 
     def __init__(self, name, description, is_template, is_deleted=False):
         self.name = name
@@ -26,7 +23,7 @@ class Project(Base):
         self.is_template = is_template
         self.is_deleted = is_deleted
     
-    @orm.reconstructor
+    @db.reconstructor
     def init_on_load(self):
         self.short_description = self.get_short_description()
             
@@ -39,19 +36,19 @@ class Project(Base):
         return self.description
 
 
-class Structure(Base):
+class Structure(db.Model):
     __tablename__ = 'structure'
-    id = Column(Integer, primary_key=True)
-    parent_id = Column(Integer, ForeignKey('structure.id'))
-    title = Column(String(80))
-    displayorder = Column(Integer)
-    pub_date = Column(DateTime)
-    children = relationship("Structure",
-        backref=backref('parent', remote_side=[id]))
+    id = db.Column(db.Integer, primary_key=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('structure.id'))
+    title = db.Column(db.String(80))
+    displayorder = db.Column(db.Integer)
+    pub_date = db.Column(db.DateTime)
+    children = db.relationship("Structure",
+        backref=db.backref('parent', remote_side=[id]))
 
-    project_id = Column(Integer, ForeignKey('project.id'))
-    project = relationship('Project',
-        backref=backref('structure', lazy='dynamic'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project = db.relationship('Project',
+        backref=db.backref('structure', lazy='dynamic'))
 
     def __init__(self, title, displayorder, project, parent=None, pub_date=None):
         self.title = title
@@ -66,15 +63,15 @@ class Structure(Base):
         return '<Structure %r>' % self.title
 
 
-class Section(Base):
+class Section(db.Model):
     __tablename__ = 'section'
-    id = Column(Integer, primary_key=True)
-    body = Column(Text)
-    pub_date = Column(DateTime)
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    pub_date = db.Column(db.DateTime)
 
-    structure_id = Column(Integer, ForeignKey('structure.id'))
-    structure = relationship('Structure',
-        backref=backref('section', lazy='dynamic'))
+    structure_id = db.Column(db.Integer, db.ForeignKey('structure.id'))
+    structure = db.relationship('Structure',
+        backref=db.backref('section', lazy='dynamic'))
 
     def __init__(self, body, structure, pub_date=None):
         self.body = body
@@ -87,14 +84,14 @@ class Section(Base):
         return '<Section %r>' % self.body
 
 
-class SectionSynopsis(Base):
+class SectionSynopsis(db.Model):
     __tablename__ = 'sectionsynopsis'
-    id = Column(Integer, primary_key=True)
-    body = Column(Text)
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
 
-    structure_id = Column(Integer, ForeignKey('structure.id'))
-    structure = relationship('Structure',
-        backref=backref('sectionsynopsis', lazy='dynamic'))
+    structure_id = db.Column(db.Integer, db.ForeignKey('structure.id'))
+    structure = db.relationship('Structure',
+        backref=db.backref('sectionsynopsis', lazy='dynamic'))
 
     def __init__(self, body, structure, pub_date=None):
         self.body = body
@@ -104,14 +101,14 @@ class SectionSynopsis(Base):
         return '<Section Synopsis %r>' % self.body
 
 
-class SectionNotes(Base):
+class SectionNotes(db.Model):
     __tablename__ = 'sectionnotes'
-    id = Column(Integer, primary_key=True)
-    body = Column(Text)
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
 
-    structure_id = Column(Integer, ForeignKey('structure.id'))
-    structure = relationship('Structure',
-        backref=backref('sectionnotes', lazy='dynamic'))
+    structure_id = db.Column(db.Integer, db.ForeignKey('structure.id'))
+    structure = db.relationship('Structure',
+        backref=db.backref('sectionnotes', lazy='dynamic'))
 
     def __init__(self, body, structure, pub_date=None):
         self.body = body

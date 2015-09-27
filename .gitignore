@@ -63,3 +63,5 @@ target/
 .settings/
 .project
 .pydevproject
+/auteur.nja
+/structure_experiments.py
