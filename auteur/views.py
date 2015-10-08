@@ -19,7 +19,6 @@ from auteur import babel
 import auteur
 from flask_babel import gettext
 from flask_weasyprint import HTML, render_pdf
-#from pdfs import create_pdf
 
 @babel.localeselector
 def get_locale():
