@@ -97,7 +97,17 @@ class NodeTestCase(unittest.TestCase):
                            data=json.dumps(dict(pos='last', parent=1))
                            )
         data = json.loads(rv.data)
-        self.assertEqual(data['status'], 1)
+        self.assertEqual(data['status_text'], "Hoorah! Section was added.")
+        
+        node_id = data['id']
+        rv = self.app.post('/delete_node', 
+                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
+                           content_type='application/json', 
+                           data=json.dumps(dict(ids=[node_id]))
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Section was deleted.")
+
         
 
 if __name__ == "__main__":
