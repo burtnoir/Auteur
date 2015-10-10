@@ -14,7 +14,8 @@ from flask import json
 class ProjectTestCase(unittest.TestCase):
 
     def setUp(self):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'test.db')
+        #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'test.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
@@ -98,8 +99,16 @@ class NodeTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was added.")
-        
+        # Update it
         node_id = data['id']
+        rv = self.app.post('/update_node', 
+                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
+                           content_type='application/json', 
+                           data=json.dumps(dict(id=node_id, text='Changed Node Text'))
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Section was updated.")
+        # And then delete it.
         rv = self.app.post('/delete_node', 
                            headers=[('X-Requested-With', 'XMLHttpRequest')], 
                            content_type='application/json', 
@@ -107,6 +116,7 @@ class NodeTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was deleted.")
+
 
         
 
