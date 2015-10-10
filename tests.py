@@ -98,8 +98,16 @@ class NodeTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was added.")
-        
+        # Update it
         node_id = data['id']
+        rv = self.app.post('/update_node', 
+                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
+                           content_type='application/json', 
+                           data=json.dumps(dict(id=node_id, text='Changed Node Text'))
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Section was updated.")
+        # And then delete it.
         rv = self.app.post('/delete_node', 
                            headers=[('X-Requested-With', 'XMLHttpRequest')], 
                            content_type='application/json', 
@@ -107,6 +115,7 @@ class NodeTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was deleted.")
+
 
         
 
