@@ -19,6 +19,7 @@ from auteur import babel
 import auteur
 from flask_babel import gettext
 from flask_weasyprint import HTML, render_pdf
+import string
 
 @babel.localeselector
 def get_locale():
@@ -267,7 +268,11 @@ def update_section():
 def update_synopsis():
     
     synopsis = SectionSynopsis.query.filter(SectionSynopsis.id == request.form['synopsis_id']).first()
-    synopsis.body = request.form['synopsis_text']
+    synopsis_text = request.form.get('synopsis_text')
+    if synopsis_text is None:
+        return jsonify(status=False,
+                       status_text=gettext("Synopsis text is missing - no update was done."))
+    synopsis.body = synopsis_text
     db.session.commit()
     return jsonify(status=True, 
                    status_text=gettext("Hoorah! Synopsis was updated."))

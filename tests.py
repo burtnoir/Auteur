@@ -115,11 +115,27 @@ class ProjectTestCase(unittest.TestCase):
         
         # Add some text to the synopsis on the root node of our project.
         project = Project.query.filter(Project.name=='Synopsis Test Project').first()
+        synopsis_id = project.structure[0].sectionsynopsis[0].id
         rv = self.app.post('/update_synopsis', 
-                           data=dict(synopsis_id=project.structure[0].sectionsynopsis[0].id, synopsis_text='Some text to show the update working.')
+                           data=dict(synopsis_id=synopsis_id, synopsis_text='Some text to show the update working.')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Synopsis was updated.")
+        self.assertEqual(data['status'], True)
+        #Now try without any text - should fail.
+        rv = self.app.post('/update_synopsis', 
+                           data=dict(synopsis_id=synopsis_id)
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], 'Synopsis text is missing - no update was done.')
+        self.assertEqual(data['status'], False)
+        # And now with blank text - which is fine if a bit drastic.
+        rv = self.app.post('/update_synopsis', 
+                           data=dict(synopsis_id=synopsis_id, synopsis_text='')
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Synopsis was updated.")
+        self.assertEqual(data['status'], True)
         
 
 if __name__ == "__main__":
