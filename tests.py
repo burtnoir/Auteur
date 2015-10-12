@@ -4,12 +4,12 @@ Created on May 28, 2015
 @author: sbrooks
 '''
 import unittest
-import os
-
-from config import basedir
 from auteur import app, db
 from auteur.models import Project
 from flask import json
+
+#import os
+#from config import basedir
 
 class ProjectTestCase(unittest.TestCase):
 
@@ -66,16 +66,8 @@ class ProjectTestCase(unittest.TestCase):
         ), follow_redirects=True)
         self.assertIn('Name already used.  Maybe a writer should try to be more original?', rv.data)
     
-    
-class NodeTestCase(unittest.TestCase):
-    
-    def setUp(self):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'test.db')
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False
-        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-        self.app = app.test_client()
-        db.create_all()
+
+    def test_nodes(self):
         # Add a project so there is something to hang our node tests off.
         self.app.post('/add_project', data=dict(
             name='Node Test Project',
@@ -84,12 +76,6 @@ class NodeTestCase(unittest.TestCase):
             template=0
         ))
         
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()        
-        
-        
-    def test_nodes(self):
         # Add a new node to the root node of our project.
         project_id = Project.query.with_entities(Project.id).filter(Project.name=='Node Test Project').first()
         rv = self.app.post('/add_node/' + str(project_id[0]), 
@@ -118,6 +104,22 @@ class NodeTestCase(unittest.TestCase):
         self.assertEqual(data['status_text'], "Hoorah! Section was deleted.")
 
 
+    def test_synopsis(self):
+        # Add a project so there is something to hang our node tests off.
+        self.app.post('/add_project', data=dict(
+            name='Synopsis Test Project',
+            description='Automated Test Project for Checking Synopsis Behaviour',
+            is_template=False,
+            template=0
+        ))
+        
+        # Add some text to the synopsis on the root node of our project.
+        project = Project.query.filter(Project.name=='Synopsis Test Project').first()
+        rv = self.app.post('/update_synopsis', 
+                           data=dict(synopsis_id=project.structure[0].sectionsynopsis[0].id, synopsis_text='Some text to show the update working.')
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Synopsis was updated.")
         
 
 if __name__ == "__main__":
