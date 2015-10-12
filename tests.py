@@ -138,5 +138,39 @@ class ProjectTestCase(unittest.TestCase):
         self.assertEqual(data['status'], True)
         
 
+    def test_notes(self):
+        # Add a project so there is something to hang our node tests off.
+        self.app.post('/add_project', data=dict(
+            name='Notes Test Project',
+            description='Automated Test Project for Checking Notes Behaviour',
+            is_template=False,
+            template=0
+        ))
+        
+        # Add some text to the notes on the root node of our project.
+        project = Project.query.filter(Project.name=='Notes Test Project').first()
+        notes_id = project.structure[0].sectionnotes[0].id
+        rv = self.app.post('/update_notes', 
+                           data=dict(notes_id=notes_id, notes_text='Some text to show the update working.')
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Notes was updated.")
+        self.assertEqual(data['status'], True)
+        #Now try without any text - should fail.
+        rv = self.app.post('/update_notes', 
+                           data=dict(notes_id=notes_id)
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], 'Notes text is missing - no update was done.')
+        self.assertEqual(data['status'], False)
+        # And now with blank text - which is fine if a bit drastic.
+        rv = self.app.post('/update_notes', 
+                           data=dict(notes_id=notes_id, notes_text='')
+                           )
+        data = json.loads(rv.data)
+        self.assertEqual(data['status_text'], "Hoorah! Notes was updated.")
+        self.assertEqual(data['status'], True)
+        
+
 if __name__ == "__main__":
     unittest.main()

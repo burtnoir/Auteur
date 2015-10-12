@@ -11,15 +11,12 @@ from flask.templating import render_template
 from werkzeug.datastructures import Headers
 from werkzeug.utils import redirect
 
-from auteur import app, db
+from auteur import app, db, babel
 from auteur.forms import ProjectForm
-from auteur.models import Project, Structure, Section, SectionSynopsis, \
-    SectionNotes
-from auteur import babel
+from auteur.models import Project, Structure, Section, SectionSynopsis, SectionNotes
 import auteur
 from flask_babel import gettext
 from flask_weasyprint import HTML, render_pdf
-import string
 
 @babel.localeselector
 def get_locale():
@@ -241,7 +238,7 @@ def delete_node():
 @app.route('/update_node', methods=['POST'])
 def update_node():
     '''
-    Update the node.
+    Update the node text.
     '''
     node = request.get_json()
     node_id = node.get('id')
@@ -266,7 +263,6 @@ def update_section():
 
 @app.route('/update_synopsis', methods=['POST'])
 def update_synopsis():
-    
     synopsis = SectionSynopsis.query.filter(SectionSynopsis.id == request.form['synopsis_id']).first()
     synopsis_text = request.form.get('synopsis_text')
     if synopsis_text is None:
@@ -280,9 +276,12 @@ def update_synopsis():
 
 @app.route('/update_notes', methods=['POST'])
 def update_notes():
-    
     notes = SectionNotes.query.filter(SectionNotes.id == request.form['notes_id']).first()
-    notes.body = request.form['notes_text']
+    notes_text = request.form.get('notes_text')
+    if notes_text is None:
+        return jsonify(status=False,
+                       status_text=gettext("Notes text is missing - no update was done."))
+    notes.body = notes_text
     db.session.commit()
     return jsonify(status=True, 
                    status_text=gettext("Hoorah! Notes was updated."))
