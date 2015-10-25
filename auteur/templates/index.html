@@ -1,5 +1,5 @@
 {% extends "layout.html" %} {% block body %}
-<div class="col-md-6">
+<div class="col-md-6 col-xs-12">
     <div class="panel panel-info">
         <div class="panel-heading">
 
@@ -41,7 +41,7 @@
     </div>
 </div>
 
-<div class="col-md-6">
+<div class="col-md-6 col-xs-12">
     {% from "form_helper.html" import render_field %} {% from "form_helper.html" import render_field_checkbox %}
     <form id="addprojectform" action="{{ url_for('add_project') }}" method=post>
         <div class="panel panel-info">
