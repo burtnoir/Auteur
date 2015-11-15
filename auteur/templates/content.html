@@ -1,34 +1,46 @@
 {% extends "layout.html" %}
-{% block body %}
-<div class=row>
 
-  <div class=col-md-3>
+{% block navbar_buttons_before %}
+<p class="pull-left visible-xs">
+  <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvasleft">Toggle Project Panel</button>
+</p>
+{% endblock %}
+
+{% block navbar_buttons_after %}
+<p class="pull-right visible-xs">
+  <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvasright">Toggle Section Panel</button>
+</p>
+{% endblock %}
+
+{% block body %}
+<div id="mainrow" class="row row-offcanvas row-offcanvas-right">
+
+  <div class="col-xs-6 col-sm-3 sidebar-offcanvas sidebar-offcanvas-left" id="leftsidebar">
 
     <div id="projectdetails" class="panel">
 
       <div id="projectdisplay" class="panel-body bg-info">
         {% from "form_helper.html" import render_field, render_field_checkbox %}
         <form id="editprojectform">
-          {{ render_field(form.name, class='form-control', id='name') }}
-          {{ render_field(form.description, class='form-control', id='description') }}
+          {{ render_field(form.name, class='form-control', id='name') }} {{ render_field(form.description, class='form-control', id='description') }}
           <div class="row">
-              <div class="col-md-8">
-            {{ render_field_checkbox(form.is_template, id='is_template') }}
+            <div class="col-md-8">
+              {{ render_field_checkbox(form.is_template, id='is_template') }}
             </div>
             <div class="col-md-4">
-            <div class="dropdown">
-              <button class="btn btn-primary dropdown-toggle" type="button" id="exportMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                {{ _('Export') }}
-                <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu" aria-labelledby="exportMenu">
-                <li><a id="export" href="{{ url_for('export_project', project_id=project.id) }}">{{ _('HTML') }}</a></li>
-                <li><a id="export_pdf" href="{{ url_for('export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</a></li>
-              </ul>
-            </div>
-            </div>  
+              <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="exportMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  {{ _('Export') }}
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="exportMenu">
+                  <li><a id="export" href="{{ url_for('export_project', project_id=project.id) }}">{{ _('HTML') }}</a></li>
+                  <li><a id="export_pdf" href="{{ url_for('export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</a></li>
+                </ul>
               </div>
-            
+            </div>
+          </div>
+
         </form>
       </div>
     </div>
@@ -48,24 +60,27 @@
         </div>
       </div>
 
-      <div id=tree><div class="panel-body"></div></div>
+      <div id=tree>
+        <div class="panel-body"></div>
+      </div>
 
-     </div>
+    </div>
   </div>
 
-  <div class=col-md-6>
+  <div class="col-xs-12 col-sm-6">
+
 
     <form id="mainform">
       <div class="form-group">
         <textarea id=sectiontext name=sectiontext>{{ section.body }}</textarea>
-        <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}"/>
+        <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}" />
       </div>
       <button id="savetext" class="btn btn-primary btn-block" type="submit">{{ _('Save') }}</button>
     </form>
 
   </div>
 
-  <div class=col-md-3>
+  <div class="col-xs-6 col-sm-3 sidebar-offcanvas sidebar-offcanvas-right" id="rightsidebar">
     <div id="projectdetails" class="panel">
       <div id="projectdisplay" class="panel-body bg-info">
         <form id="synopsisform">
@@ -73,78 +88,81 @@
             <label for=synopsis_text class="control-label">{{ _('Synopsis') }}</label>
             <textarea id=synopsis_text name=synopsis_text class="form-control" placeholder="{{ _('Enter the synopsis for this section here.') }}">{{ synopsis.body }}</textarea>
           </div>
-          <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}"/>
+          <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}" />
         </form>
         <form id="notesform">
           <div class="form-group">
             <label for=notes_text class="control-label">{{ _('Notes') }}</label>
             <textarea id=notes_text name=notes_text class="form-control" placeholder="{{ _('Enter any notes for this section here.') }}">{{ notes.body }}</textarea>
           </div>
-          <input id="notes_id" name="notes_id" type="hidden" value="{{ notes.id }}"/>
+          <input id="notes_id" name="notes_id" type="hidden" value="{{ notes.id }}" />
         </form>
       </div>
     </div>
   </div>
+
 </div>
 
 <script src="{{ url_for('static', filename='content.js') }}"></script>
 <script>
   var treeData = [
-                {% for item in structure %}
-                  { "id"     : {{ item.id }},
-                    "parent" : {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
-                    "text"   : "{{ item.title }}",
-                    "data"   : {"displayorder"  : {{ item.displayorder }} },
-                    "state"  : {
-                      "opened" : true,
-                      "selected" : {% if item.parent_id %} false {% else %} true {% endif %}
-                    }
+    {% for item in structure %} {
+      "id": {{ item.id }},
+      "parent": {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
+      "text": "{{ item.title }}",
+      "data": { "displayorder": {{ item.displayorder }} },
+      "state": {
+        "opened": true,
+        "selected": {% if item.parent_id %} false {% else %} true {% endif %}}
                   },
-                {% else %}
-                     { "id" : "0", "parent" : "#", "text" : "Oops, there's no structure.  Should create the first node when creating a new project." }
-                {% endfor %}
+    {% else %}
+    { "id": "0",
+      "parent": "#",
+      "text": "Oops, there's no structure.  Should create the first node when creating a new project."
+        }
+    {% endfor %}
                 ];
 
-  $('#tree_add').click(function(){
+  $('#tree_add').click(function () {
     treeAdd({{ project.id }});
   });
 
-  $('#tree_rename').click(function() {
+  $('#tree_rename').click(function () {
     treeRename();
   });
 
-  $('#tree_delete').click(function() {
+  $('#tree_delete').click(function () {
     treeDelete();
   });
 
-  $('#editprojectform :input').change(function(){
+  $('#editprojectform :input').change(function () {
     editProject({{ project.id }});
   });
 
-  $( "#editprojectform" ).submit(function( event ) {
+  $("#editprojectform").submit(function (event) {
     event.preventDefault();
     editProject({{ project.id }});
   });
 
-  $( "#mainform" ).submit(function( event ) {
+  $("#mainform").submit(function (event) {
     event.preventDefault();
     saveText({{ project.id }});
   });
 
-  $('#synopsisform :input').change(function(){
+  $('#synopsisform :input').change(function () {
     saveSynopsis();
   });
 
-  $( "#synopsisform" ).submit(function( event ) {
+  $("#synopsisform").submit(function (event) {
     event.preventDefault();
     saveSynopsis();
   });
 
-  $('#notesform :input').change(function(){
+  $('#notesform :input').change(function () {
     saveNotes();
   });
 
-  $( "#notesform" ).submit(function( event ) {
+  $("#notesform").submit(function (event) {
     event.preventDefault();
     saveNotes();
   });

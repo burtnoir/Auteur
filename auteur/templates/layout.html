@@ -2,9 +2,15 @@
 
 <head>
     <title>Auteur</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"> -->
+    <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='lib/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='lib/bootstrap/css/bootstrap-theme.min.css') }}">
+    <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='offcanvas.css') }}">
     <!-- Tree plugin -->
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='lib/jstree/style.min.css') }}">
     <!-- Local Styles -->
@@ -16,7 +22,8 @@
     <!-- CKEditor -->
     <script src="{{ url_for('static', filename='lib/ckeditor/ckeditor.js') }}"></script>
     <!-- Bootstrap -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script> -->
+    <script src="{{ url_for('static', filename='lib/bootstrap/js/bootstrap.min.js') }}"></script>
     <!-- Tree plugin -->
     <script src="{{ url_for('static', filename='lib/jstree/jstree.min.js') }}"></script>
     <script>
@@ -25,16 +32,18 @@
 </head>
 
 <body>
+  
     <div class=container-fluid>
-
+      
         <div class="row">
             <nav id="topnav" class="navbar navbar-default">
                 <div class="container-fluid">
                     <!-- Brand and toggle get grouped for better mobile display -->
                     <div class="navbar-header">
+                      {% block navbar_buttons_before %}{% endblock %}
                         <a class="navbar-brand" href="{{ url_for('get_project_list') }}"><span class="glyphicon glyphicon-pencil"></span>Auteur: <small>{{ _('Organise Your Writing') }}</small></a>
+                    {% block navbar_buttons_after %}{% endblock %}
                     </div>
-                    <a id="config" href="{{ url_for('show_config') }}" role="button" class="btn btn-primary navbar-btn navbar-right">{{ _('Configuration') }}</a>
                 </div>
             </nav>
         </div>
@@ -43,7 +52,9 @@
             <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             {{ message }}
         </div>
-        {% endfor %} {% block body %}{% endblock %}
+        {% endfor %} 
+      
+      {% block body %}{% endblock %}
 
         <nav id="bottombar" class="navbar navbar-default navbar-fixed-bottom">
             <div class="container">

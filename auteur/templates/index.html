@@ -1,4 +1,10 @@
-{% extends "layout.html" %} {% block body %}
+{% extends "layout.html" %} 
+
+{% block navbar_buttons_after %}
+<a id="config" href="{{ url_for('show_config') }}" role="button" class="btn btn-primary navbar-btn navbar-right">{{ _('Configuration') }}</a>
+{% endblock %}
+
+{% block body %}
 <div class="col-md-6 col-xs-12">
     <div class="panel panel-info">
         <div class="panel-heading">

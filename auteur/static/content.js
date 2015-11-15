@@ -22,6 +22,16 @@ $(document).ready(
             resizer(CKEDITOR.instances.sectiontext);
         });
 
+        // Toggle the off canvas element.
+        $('[data-toggle="offcanvasright"]').click(function () {
+            $('#mainrow').addClass('row-offcanvas-right').removeClass('row-offcanvas-left').toggleClass('active');
+          });
+
+        $('[data-toggle="offcanvasleft"]').click(function () {
+            $('#mainrow').addClass('row-offcanvas-left').removeClass('row-offcanvas-right').toggleClass('active')
+          });
+
+      
         // Set up the tree. Needs an array of JSON objects.
         $('#tree').on('changed.jstree',
             function (e, data) {
