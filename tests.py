@@ -25,7 +25,7 @@ class ProjectTestCase(unittest.TestCase):
     def tearDown(self):
         db.session.remove()
         db.drop_all()
-        
+
 
     def test_empty_db(self):
         rv = self.app.get('/')
@@ -37,7 +37,7 @@ class ProjectTestCase(unittest.TestCase):
             name=''
         ), follow_redirects=True)
         self.assertIn('You need to name the project.', rv.data)
-        
+
         rv = self.app.post('/add_project', data=dict(
             name='Automated Test Project'
         ), follow_redirects=True)
@@ -48,7 +48,8 @@ class ProjectTestCase(unittest.TestCase):
                                                      description='Automated Test Project'
         ), follow_redirects=True)
         self.assertIn('You need to name the project.', rv.data)
-        
+
+        # Expected to work and set up the situation for the duplication test.
         rv = self.app.post('/add_project', data=dict(
             name='Automated Test Project',
             description='Automated Test Project Description goes here!',
@@ -57,7 +58,8 @@ class ProjectTestCase(unittest.TestCase):
         ), follow_redirects=True)
         self.assertIn('Automated Test Project', rv.data)
         self.assertIn('Automated Test Project Description goes here!', rv.data)
-        
+
+        # Check we can't use the same name twice.
         rv = self.app.post('/add_project', data=dict(
             name='Automated Test Project',
             description='Automated Test Project Description goes here! Description is different.',
@@ -65,7 +67,36 @@ class ProjectTestCase(unittest.TestCase):
             template=0
         ), follow_redirects=True)
         self.assertIn('Name already used.  Maybe a writer should try to be more original?', rv.data)
-    
+
+        # Get the project id so we can try some updates.
+        project = Project.query.with_entities(Project.id).filter(Project.name=='Automated Test Project').first()
+
+        with self.app as c:
+            with c.session_transaction() as sess:
+                sess['project_id'] = project.id
+
+            # Check we can update the description.
+            rv = c.post('/update_project/' + str(project.id),
+                data=dict(
+                name='Automated Test Project',
+                description='The description has been updated.',
+                is_template=False,
+                template=0
+            ))
+            data = json.loads(rv.data)
+            self.assertEqual(data['status_text'], "Hoorah! Project details were updated.")
+
+            # Check we can update the name.
+            rv = c.post('/update_project/' + str(project.id),
+                data=dict(
+                name='The Name Updated',
+                description='The description has been updated.',
+                is_template=False,
+                template=0
+            ))
+            data = json.loads(rv.data)
+            self.assertEqual(data['status_text'], "Hoorah! Project details were updated.")
+
 
     def test_nodes(self):
         # Add a project so there is something to hang our node tests off.
@@ -75,29 +106,29 @@ class ProjectTestCase(unittest.TestCase):
             is_template=False,
             template=0
         ))
-        
+
         # Add a new node to the root node of our project.
         project_id = Project.query.with_entities(Project.id).filter(Project.name=='Node Test Project').first()
-        rv = self.app.post('/add_node/' + str(project_id[0]), 
-                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
-                           content_type='application/json', 
+        rv = self.app.post('/add_node/' + str(project_id[0]),
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
                            data=json.dumps(dict(pos='last', parent=1))
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was added.")
         # Update it
         node_id = data['id']
-        rv = self.app.post('/update_node', 
-                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
-                           content_type='application/json', 
+        rv = self.app.post('/update_node',
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
                            data=json.dumps(dict(id=node_id, text='Changed Node Text'))
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was updated.")
         # And then delete it.
-        rv = self.app.post('/delete_node', 
-                           headers=[('X-Requested-With', 'XMLHttpRequest')], 
-                           content_type='application/json', 
+        rv = self.app.post('/delete_node',
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
                            data=json.dumps(dict(ids=[node_id]))
                            )
         data = json.loads(rv.data)
@@ -112,31 +143,31 @@ class ProjectTestCase(unittest.TestCase):
             is_template=False,
             template=0
         ))
-        
+
         # Add some text to the synopsis on the root node of our project.
         project = Project.query.filter(Project.name=='Synopsis Test Project').first()
         synopsis_id = project.structure[0].sectionsynopsis[0].id
-        rv = self.app.post('/update_synopsis', 
+        rv = self.app.post('/update_synopsis',
                            data=dict(synopsis_id=synopsis_id, synopsis_text='Some text to show the update working.')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Synopsis was updated.")
         self.assertEqual(data['status'], True)
         #Now try without any text - should fail.
-        rv = self.app.post('/update_synopsis', 
+        rv = self.app.post('/update_synopsis',
                            data=dict(synopsis_id=synopsis_id)
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], 'Synopsis text is missing - no update was done.')
         self.assertEqual(data['status'], False)
         # And now with blank text - which is fine if a bit drastic.
-        rv = self.app.post('/update_synopsis', 
+        rv = self.app.post('/update_synopsis',
                            data=dict(synopsis_id=synopsis_id, synopsis_text='')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Synopsis was updated.")
         self.assertEqual(data['status'], True)
-        
+
 
     def test_notes(self):
         # Add a project so there is something to hang our node tests off.
@@ -146,31 +177,31 @@ class ProjectTestCase(unittest.TestCase):
             is_template=False,
             template=0
         ))
-        
+
         # Add some text to the notes on the root node of our project.
         project = Project.query.filter(Project.name=='Notes Test Project').first()
         notes_id = project.structure[0].sectionnotes[0].id
-        rv = self.app.post('/update_notes', 
+        rv = self.app.post('/update_notes',
                            data=dict(notes_id=notes_id, notes_text='Some text to show the update working.')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Notes was updated.")
         self.assertEqual(data['status'], True)
         #Now try without any text - should fail.
-        rv = self.app.post('/update_notes', 
+        rv = self.app.post('/update_notes',
                            data=dict(notes_id=notes_id)
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], 'Notes text is missing - no update was done.')
         self.assertEqual(data['status'], False)
         # And now with blank text - which is fine if a bit drastic.
-        rv = self.app.post('/update_notes', 
+        rv = self.app.post('/update_notes',
                            data=dict(notes_id=notes_id, notes_text='')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Notes was updated.")
         self.assertEqual(data['status'], True)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

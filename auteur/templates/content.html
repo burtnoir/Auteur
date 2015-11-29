@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block navbar_buttons_before %}
-<p class="pull-left visible-xs">
+<p class="pull-left visible-xs visible-sm">
   <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvasleft">Toggle Project Panel</button>
 </p>
 {% endblock %}
@@ -15,7 +15,7 @@
 {% block body %}
 <div id="mainrow" class="row row-offcanvas row-offcanvas-right">
 
-  <div class="col-xs-6 col-sm-3 sidebar-offcanvas sidebar-offcanvas-left" id="leftsidebar">
+  <div class="col-xs-6 col-sm-6 col-md-3 sidebar-offcanvas sidebar-offcanvas-left" id="leftsidebar">
 
     <div id="projectdetails" class="panel">
 
@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <div class="col-xs-12 col-sm-6">
+  <div class="col-xs-12 col-sm-9 col-md-6">
 
 
     <form id="mainform">
@@ -80,7 +80,7 @@
 
   </div>
 
-  <div class="col-xs-6 col-sm-3 sidebar-offcanvas sidebar-offcanvas-right" id="rightsidebar">
+  <div class="col-xs-6 col-sm-3 col-md-3 sidebar-offcanvas sidebar-offcanvas-right" id="rightsidebar">
     <div id="projectdetails" class="panel">
       <div id="projectdisplay" class="panel-body bg-info">
         <form id="synopsisform">

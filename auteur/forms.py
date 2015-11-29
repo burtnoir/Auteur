@@ -3,6 +3,7 @@ Created on May 30, 2015
 
 @author: sbrooks
 '''
+from flask import session
 from flask_wtf import Form
 from wtforms import StringField, BooleanField, SelectField, TextAreaField, validators
 from auteur import db
@@ -22,13 +23,13 @@ class ProjectForm(Form):
                           ])
     template = SelectField(lazy_gettext('Template'), coerce=int)
     is_template = BooleanField(lazy_gettext('Project Is a Template?'))
-    
+
     def validate_name(form, field):
         '''
         This defines an inline validator to check that the project name is unique.
-        The naming is important - it must start with the word validate be followed 
+        The naming is important - it must start with the word validate be followed
         by an underscore and then the name of the field.
         '''
-        num_same_names = db.session.query(Project.name, db.func.count(Project.name)).filter_by(name=field.data).scalar()
+        num_same_names = db.session.query(db.func.count()).filter(Project.name==field.data).filter(Project.id<>session.get('project_id', -1)).scalar()
         if num_same_names > 0:
             raise ValidationError(lazy_gettext('Name already used.  Maybe a writer should try to be more original?'))

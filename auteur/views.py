@@ -3,7 +3,7 @@ Created on Apr 25, 2015
 
 @author: sbrooks
 '''
-from flask import stream_with_context, Response
+from flask import stream_with_context, Response, session
 from flask.globals import request
 from flask.helpers import url_for, flash
 from flask.json import jsonify
@@ -25,21 +25,18 @@ def get_locale():
 @app.route('/')
 @app.route('/get_project_list', methods=['GET'])
 def get_project_list():
-
     projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template==False).all()
     return get_project_list_helper(projects)
 
 
 @app.route('/get_template_list', methods=['GET'])
 def get_template_list():
-
     projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template).all()
     return get_project_list_helper(projects)
 
 
 @app.route('/get_deleted_template_list', methods=['GET'])
 def get_deleted_template_list():
-
     projects = Project.query.filter(Project.is_deleted).filter(Project.is_template).all()
     return get_project_list_helper(projects)
 
@@ -54,11 +51,12 @@ def get_deleted_project_list():
 
 
 def get_project_list_helper(projects):
+    session.pop('project_id', None)
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template).filter(Project.is_deleted==False)]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
-    return render_template('index.html', 
-                           projects=projects, 
+    return render_template('index.html',
+                           projects=projects,
                            form=form)
 
 
@@ -70,7 +68,7 @@ def show_content(project_id, structure_id):
     form = ProjectForm(obj=project)
     del form.template
     structure = Structure.query.filter_by(project_id=project.id)
-    
+
     # If the id wasn't passed (probably because the call is from the project page)
     # then open the first structure item's text.
     if structure_id is None:
@@ -78,12 +76,13 @@ def show_content(project_id, structure_id):
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
-    return render_template('content.html', 
-                           project=project, 
-                           structure=structure, 
-                           section=section, 
-                           synopsis=synopsis, 
-                           notes=notes, 
+    session['project_id'] = project_id
+    return render_template('content.html',
+                           project=project,
+                           structure=structure,
+                           section=section,
+                           synopsis=synopsis,
+                           notes=notes,
                            form=form)
 
 
@@ -96,11 +95,11 @@ def get_section():
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
-    return jsonify(section_text=section.body, 
-                   section_id=section.id, 
-                   synopsis_text=synopsis.body, 
-                   synopsis_id=synopsis.id, 
-                   notes_text=notes.body, 
+    return jsonify(section_text=section.body,
+                   section_id=section.id,
+                   synopsis_text=synopsis.body,
+                   synopsis_id=synopsis.id,
+                   notes_text=notes.body,
                    notes_id=notes.id)
 
 
@@ -109,6 +108,7 @@ def add_project():
     '''
     Add a project.  Default a tree structure and sections to go with them.
     '''
+    session.pop('project_id', None)
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
@@ -120,15 +120,16 @@ def add_project():
             copy_from_template(project, form.template.data)
         else:
             create_node(project=project, title=form.name.data)
-        
+
         db.session.commit()
-    
+        session['project_id'] = project.id
+
         flash('New Project Added')
         return redirect(url_for('show_content', project_id=project.id, structure_id=None))
-    
+
     projects = Project.query.all()
-    return render_template('index.html', 
-                           projects=projects, 
+    return render_template('index.html',
+                           projects=projects,
                            form=form)
 
 
@@ -143,7 +144,7 @@ def copy_from_template(project, template_id):
             filter(Structure.id == SectionSynopsis.structure_id).\
             filter(Structure.id == SectionNotes.structure_id).\
             filter(Structure.project_id == template_id).order_by(Structure.parent_id).all():
-        
+
         # Check the map to find the new parent.
         new_parent = None
         if structure.parent and structure.parent_id in structure_map:
@@ -152,7 +153,7 @@ def copy_from_template(project, template_id):
         # then it has no parent and so is a root element.
         new_structure = Structure(parent=new_parent, title=structure.title, displayorder=structure.displayorder, project=project)
         db.session.add(new_structure)
-        # Every time a structure record is processed we add it to the map to link the 
+        # Every time a structure record is processed we add it to the map to link the
         # template element to the newly created element.
         structure_map[structure.id] = new_structure
         db.session.add(Section(body=section.body, structure=new_structure))
@@ -196,17 +197,17 @@ def add_node(project_id):
     parent = Structure.query.filter(id==parent_id).first()
     # Get the highest display order for this project so we can assign the new node to last place.
     displayorder = db.session.query(db.func.max(Structure.displayorder)).filter(Project.id==project_id).scalar() + 1
-    
+
     structure = create_node(project=project, parent=parent, displayorder=displayorder)
-    
+
     db.session.commit()
 
-    return jsonify(id=structure.id, 
-                   text=structure.title, 
-                   displayorder=structure.displayorder, 
+    return jsonify(id=structure.id,
+                   text=structure.title,
+                   displayorder=structure.displayorder,
                    status_text=gettext("Hoorah! Section was added."))
-    
-    
+
+
 def create_node(project, parent=None, displayorder=1, title='New Section'):
     '''
     Create a new node along with anything that has to be attached.
@@ -256,8 +257,8 @@ def update_section():
     section = Section.query.filter(Section.id == request.form['section_id']).first()
     section.body = request.form['sectiontext']
     db.session.commit()
-    
-    return jsonify(status=True, 
+
+    return jsonify(status=True,
                    status_text=gettext("Save was a Complete Success!"))
 
 
@@ -270,7 +271,7 @@ def update_synopsis():
                        status_text=gettext("Synopsis text is missing - no update was done."))
     synopsis.body = synopsis_text
     db.session.commit()
-    return jsonify(status=True, 
+    return jsonify(status=True,
                    status_text=gettext("Hoorah! Synopsis was updated."))
 
 
@@ -283,13 +284,13 @@ def update_notes():
                        status_text=gettext("Notes text is missing - no update was done."))
     notes.body = notes_text
     db.session.commit()
-    return jsonify(status=True, 
+    return jsonify(status=True,
                    status_text=gettext("Hoorah! Notes was updated."))
 
 
 @app.route('/update_project/<int:project_id>', methods=['POST'])
 def update_project(project_id):
-    
+
     form = ProjectForm(request.form)
     del form.template
     if form.validate():
@@ -301,9 +302,9 @@ def update_project(project_id):
         return jsonify(status=True, status_text=gettext("Hoorah! Project details were updated."))
 
     # Return the errors so that the caller can show them without refreshing
-    # the page.    
-    return jsonify(status=False, 
-                   name_errors=form.name.errors, 
+    # the page.
+    return jsonify(status=False,
+                   name_errors=form.name.errors,
                    description_errors=form.description.errors)
 
 
@@ -324,11 +325,11 @@ def export_project(project_id):
         stream_with_context(generate(project_id)),
         headers=headers
     )
-    
-    
+
+
 @app.route('/export_project_pdf/<int:project_id>', methods=['GET'])
 def export_project_pdf(project_id):
-    ''' 
+    '''
     Make a PDF straight from HTML in a string and send it to the user.
     '''
     html = ''
@@ -342,14 +343,14 @@ def generate(project_id):
         section = Section.query.filter(Section.structure_id==instance.id).first()
         yield section.body
 
-    
+
 @app.route('/show_config')
 def show_config():
     '''
     Get the current the current configuration and then show the template.
     '''
     config = Project.query.all()
-    return render_template('config.html', 
+    return render_template('config.html',
                            config=config)
 
 

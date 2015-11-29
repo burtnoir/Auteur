@@ -24,11 +24,11 @@ $(document).ready(
 
         // Toggle the off canvas element.
         $('[data-toggle="offcanvasright"]').click(function () {
-            $('#mainrow').addClass('row-offcanvas-right').removeClass('row-offcanvas-left').toggleClass('active');
+            $('#mainrow').removeClass('row-offcanvas-left').addClass('row-offcanvas-right').toggleClass('active');
           });
 
         $('[data-toggle="offcanvasleft"]').click(function () {
-            $('#mainrow').addClass('row-offcanvas-left').removeClass('row-offcanvas-right').toggleClass('active')
+            $('#mainrow').addClass('row-offcanvas-left').removeClass('row-offcanvas-right').toggleClass('active');
           });
 
       

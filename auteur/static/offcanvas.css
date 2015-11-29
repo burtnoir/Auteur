@@ -1,25 +1,25 @@
 /*
- * Style tweaks
- * --------------------------------------------------
+ * Style tweaks to allow off canvas panels.
+ * ----------------------------------------
  */
 html,
 body {
   overflow-x: hidden; /* Prevent scroll on narrow devices */
 }
-/* footer {
-  padding: 30px 0;
-} */
 
 /*
  * Off Canvas
  * --------------------------------------------------
+  
+   This set takes effect at Bootstrap's extra small setting and allows us to have
+   an off canvas menu for both sides.  The original example had easing but I removed
+   it because of rendering issues when going straight from one side menu to the other.
+   Basically the easing would not happen because of the class change being done in js
+   so it looked bad sometimes easing and sometimes not. 
  */
 @media screen and (max-width: 767px) {
   .row-offcanvas {
     position: relative;
-    -webkit-transition: all .25s ease-out;
-         -o-transition: all .25s ease-out;
-            transition: all .25s ease-out;
   }
 
   .row-offcanvas-right {
@@ -35,7 +35,7 @@ body {
     right: -50%; /* 6 columns */
   }
 
-  .row-offcanvas
+  .row-offcanvas  
   .sidebar-offcanvas-left {
     left: -50%; /* 6 columns */
   }
@@ -49,6 +49,47 @@ body {
   }
 
   .sidebar-offcanvas {
+    position: absolute;
+    top: 0;
+    width: 50%; /* 6 columns */
+  }
+}
+
+/* This set takes effect at Bootstrap's small setting and allows us to have
+   an off canvas menu for the left while allowing the right side to shrink down. */
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .row-offcanvas {
+    position: relative;
+  }
+
+  .row-offcanvas-right {
+    right: 0;
+  }
+
+  .row-offcanvas-left {
+    left: 0;
+  }
+
+  .row-offcanvas
+  .sidebar-offcanvas-right {
+    right: 0; /* 6 columns */
+  } 
+
+
+  .row-offcanvas  
+  .sidebar-offcanvas-left {
+    left: -50%; /* 6 columns */
+  }
+
+  .row-offcanvas-right.active {
+    right: 0; /* 6 columns */
+  }
+
+  .row-offcanvas-left.active {
+    left: 50%; /* 6 columns */
+  }
+
+  .sidebar-offcanvas-left {
     position: absolute;
     top: 0;
     width: 50%; /* 6 columns */
