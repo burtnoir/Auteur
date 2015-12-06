@@ -3,17 +3,21 @@ $(document).ready(
 
         var resizer = function (ed) {
             var h = $('body').height(),
-                t = $('#topnav').height(),
-                b = $('#bottombar').height();
-            ed.resize('100%', h - t - b);
+                t = $('#topnav').height()
+            ed.resize('100%', h - t);
         };
 
+        var timeoutID;
         // Replace the textarea with a CKEditor
         // instance, using default configuration.
         CKEDITOR.replace('sectiontext', {
             on: {
                 instanceReady: function (ev) {
                     resizer(ev.editor);
+                },
+                change: function (ev) {
+                  window.clearTimeout(timeoutID);
+                  timeoutID = window.setTimeout(saveText, 2000);
                 }
             }
         });
