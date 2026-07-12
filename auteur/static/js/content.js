@@ -2,11 +2,12 @@ $(document).ready(
     function () {
 
         const resizer = function (ed) {
-            const h = $('body').height(),
-                t = $('#topnav').height(),
-                f = $('#bottombar').height(),
-                n = $('#notesform').height();
-            ed.resize('100%', h - t - f - n);
+            // const h = $('body').height(),
+            //     t = $('#topnav').height(),
+            //     f = $('#bottombar').height();
+            //    // n = $('#notesform').height();
+            // ed.resize('100%', h - t - f);
+            ed.resize('100%', 300);
         };
 
         let timeoutID;
@@ -377,6 +378,35 @@ $(document).ready(
                 .catch(error => console.error('There was an error with the Save Characters Fetch operation: ', error));
 
         };
+
+
+
+  $('#synopsisform :input').change(function () {
+    saveSynopsis();
+  });
+
+  $("#synopsisform").submit(function (event) {
+    event.preventDefault();
+    saveSynopsis();
+  });
+
+  $('#notesform :input').change(function () {
+    saveNotes();
+  });
+
+  $("#notesform").submit(function (event) {
+    event.preventDefault();
+    saveNotes();
+  });
+
+  $('#characterform :input').change(function () {
+    saveCharacters();
+  });
+
+  $("#characterform").submit(function (event) {
+    event.preventDefault();
+    saveCharacters();
+  });
 
         // Whole-rail collapse toggles
         function wireRailToggle(sidebarId, toggleId, openIcon, closedIcon) {

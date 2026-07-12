@@ -202,33 +202,6 @@
     saveText({{ project.id }});
   });
 
-  $('#synopsisform :input').change(function () {
-    saveSynopsis();
-  });
-
-  $("#synopsisform").submit(function (event) {
-    event.preventDefault();
-    saveSynopsis();
-  });
-
-  $('#notesform :input').change(function () {
-    saveNotes();
-  });
-
-  $("#notesform").submit(function (event) {
-    event.preventDefault();
-    saveNotes();
-  });
-
-  $('#characterform :input').change(function () {
-    saveCharacters();
-  });
-
-  $("#characterform").submit(function (event) {
-    event.preventDefault();
-    saveCharacters();
-  });
-
 
   // Save toast: fire whenever content.js dispatches a 'auteur:saved' event.
   // See note below about adding this trigger to content.js's save callbacks.

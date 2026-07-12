@@ -1,7 +1,37 @@
-html, body    { height:100%; }
-body    { padding-bottom: 70px; }
-textarea { resize: vertical; }
-.error  { background: #f0d6d6; padding: 0.5em; }
+/* ---- Page-level flex scaffold (layout.jinja) ----
+   Makes container-fluid's body area grow to fill whatever space is left
+   above bottombar, with no hardcoded navbar/bottombar heights. */
+
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body > .container {
+  flex: 0 0 auto; /* topnav wrapper: natural height */
+}
+
+.page-flex {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* required for flex children to be allowed to shrink/scroll */
+}
+
+.body-flex {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto; /* pages shorter than the viewport just don't scroll */
+}
+
+#bottombar {
+  flex: 0 0 auto; /* natural height, always visible at the bottom of the flex column */
+}
 
 /* ---- Collapsible sidebar layout (content.jinja) ---- */
 
@@ -11,7 +41,7 @@ textarea { resize: vertical; }
 }
 
 .app-shell {
-  height: calc(100vh - 53px); /* adjust to match topnav/bottombar height */
+  height: 100%; /* fills .body-flex, whatever that ends up being */
 }
 
 .min-width-0 {
