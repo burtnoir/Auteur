@@ -1,0 +1,12 @@
+{
+  "undef": true,
+  "unused": true,
+  "jquery": true,
+  "esversion": 6,
+  "browser": true,
+  "devel": true,
+  "globals": {
+    "CKEDITOR": false,
+    "$": false
+  }
+}

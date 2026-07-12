@@ -1,72 +1,63 @@
-'''
-Created on Apr 25, 2015
-
-@author: sbrooks
-'''
-from flask import stream_with_context, Response, session
-from flask.globals import request
-from flask.helpers import url_for, flash
-from flask.json import jsonify
-from flask.templating import render_template
+from flask import (
+    Blueprint, flash, g, redirect, render_template, request, url_for, Response, session, current_app,
+    stream_with_context
+)
 from werkzeug.datastructures import Headers
-from werkzeug.utils import redirect
-
-from auteur import app, db, babel
-from auteur.forms import ProjectForm
-from auteur.models import Project, Structure, Section, SectionSynopsis, SectionNotes
-import auteur
-from flask_babel import gettext
+from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters
+from flask_babel import gettext, Babel
+from flask.json import jsonify
 from flask_weasyprint import HTML, render_pdf
+from auteur.forms import ProjectForm
 
-@babel.localeselector
-def get_locale():
-    return request.accept_languages.best_match(auteur.app.config['LANGUAGES'].keys())
+bp = Blueprint('editor', __name__)
 
-@app.route('/')
-@app.route('/get_project_list', methods=['GET'])
+
+@bp.route('/')
+@bp.route('/get_project_list', methods=['GET'])
 def get_project_list():
-    projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template==False).all()
+    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == False).all()
     return get_project_list_helper(projects)
 
 
-@app.route('/get_template_list', methods=['GET'])
+@bp.route('/get_template_list', methods=['GET'])
 def get_template_list():
-    projects = Project.query.filter(Project.is_deleted==False).filter(Project.is_template).all()
+    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == True).all()
     return get_project_list_helper(projects)
 
 
-@app.route('/get_deleted_template_list', methods=['GET'])
+@bp.route('/get_deleted_template_list', methods=['GET'])
 def get_deleted_template_list():
-    projects = Project.query.filter(Project.is_deleted).filter(Project.is_template).all()
+    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == True).all()
     return get_project_list_helper(projects)
 
 
-@app.route('/get_deleted_project_list', methods=['GET'])
+@bp.route('/get_deleted_project_list', methods=['GET'])
 def get_deleted_project_list():
-    '''
+    """
     Get a list of deleted projects for display.
-    '''
-    projects = Project.query.filter(Project.is_deleted).filter(Project.is_template==False).all()
+    """
+    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == False).all()
     return get_project_list_helper(projects)
 
 
 def get_project_list_helper(projects):
     session.pop('project_id', None)
     form = ProjectForm(request.form)
-    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template).filter(Project.is_deleted==False)]
+    form.template.choices = [(t.id, t.name) for t in Project.query.filter(Project.is_template == True, Project.is_deleted == False).order_by('name').all()]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
-    return render_template('index.html',
+    return render_template('editor/index.jinja',
                            projects=projects,
                            form=form)
 
 
-@app.route('/project/<int:project_id>/', defaults={'structure_id' : None})
-@app.route('/project/<int:project_id>/<int:structure_id>')
+@bp.route('/project/<int:project_id>/', defaults={'structure_id': None})
+@bp.route('/project/<int:project_id>/<int:structure_id>')
 def show_content(project_id, structure_id):
     # show the project with the given id, the id is an integer
     project = Project.query.filter_by(id=project_id).first()
     form = ProjectForm(obj=project)
     del form.template
+    del form.submit
     structure = Structure.query.filter_by(project_id=project.id)
 
     # If the id wasn't passed (probably because the call is from the project page)
@@ -76,38 +67,48 @@ def show_content(project_id, structure_id):
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
-    session['project_id'] = project_id
-    return render_template('content.html',
+    characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
+    # TODO Decide if setting a session key-value is needed - was using it for the project form validator
+    # but I have a different way to do it now where the project_id is stored on the
+    # project form so we might not need to use the session.  Probably better
+    # as it avoids making the project id global which needs managing compared to
+    # a property on the form which will only live for the life of the object instance.
+    # session['project_id'] = project_id
+    return render_template('editor/content.jinja',
                            project=project,
                            structure=structure,
                            section=section,
                            synopsis=synopsis,
                            notes=notes,
+                           characters=characters,
                            form=form)
 
 
-@app.route('/get_section', methods=['GET'])
+@bp.route('/get_section', methods=['GET'])
 def get_section():
-    '''
+    """
     Get the contents of a section for display.
-    '''
+    """
     structure_id = request.args.get('structure_id', 0, type=int)
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
+    characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
     return jsonify(section_text=section.body,
                    section_id=section.id,
                    synopsis_text=synopsis.body,
                    synopsis_id=synopsis.id,
                    notes_text=notes.body,
-                   notes_id=notes.id)
+                   notes_id=notes.id,
+                   characters_text=characters.body,
+                   characters_id=characters.id)
 
 
-@app.route('/add_project', methods=['POST'])
+@bp.route('/add_project', methods=['POST'])
 def add_project():
-    '''
+    """
     Add a project.  Default a tree structure and sections to go with them.
-    '''
+    """
     session.pop('project_id', None)
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
@@ -125,25 +126,25 @@ def add_project():
         session['project_id'] = project.id
 
         flash('New Project Added')
-        return redirect(url_for('show_content', project_id=project.id, structure_id=None))
+        return redirect(url_for('editor.show_content', project_id=project.id, structure_id=None))
 
     projects = Project.query.all()
-    return render_template('index.html',
+    return render_template('editor/index.jinja',
                            projects=projects,
                            form=form)
 
 
 def copy_from_template(project, template_id):
-    '''
+    """
     Get the template contents and add them to the new project.
-    '''
+    """
     structure_map = {}
-    for structure, section, synopsis, notes in \
-            db.session.query(Structure, Section, SectionSynopsis, SectionNotes).\
-            filter(Structure.id == Section.structure_id).\
-            filter(Structure.id == SectionSynopsis.structure_id).\
-            filter(Structure.id == SectionNotes.structure_id).\
-            filter(Structure.project_id == template_id).order_by(Structure.parent_id).all():
+    for structure, section, synopsis, notes, characters in db.session.query(Structure, Section, SectionSynopsis,
+                                                                SectionNotes, SectionCharacters).filter(
+        Structure.id == Section.structure_id).filter(Structure.id == SectionSynopsis.structure_id).filter(
+        Structure.id == SectionNotes.structure_id).filter(Structure.id == SectionCharacters.structure_id).filter(
+        Structure.project_id == template_id).order_by(
+        Structure.parent_id).all():
 
         # Check the map to find the new parent.
         new_parent = None
@@ -151,7 +152,8 @@ def copy_from_template(project, template_id):
             new_parent = structure_map[structure.parent_id]
         # Create the new structure element using the discovered parent.  If nothing was found
         # then it has no parent and so is a root element.
-        new_structure = Structure(parent=new_parent, title=structure.title, displayorder=structure.displayorder, project=project)
+        new_structure = Structure(parent=new_parent, title=structure.title, displayorder=structure.displayorder,
+                                  project=project)
         db.session.add(new_structure)
         # Every time a structure record is processed we add it to the map to link the
         # template element to the newly created element.
@@ -159,44 +161,46 @@ def copy_from_template(project, template_id):
         db.session.add(Section(body=section.body, structure=new_structure))
         db.session.add(SectionSynopsis(body=synopsis.body, structure=new_structure))
         db.session.add(SectionNotes(body=notes.body, structure=new_structure))
+        db.session.add(SectionCharacters(body=characters.body, structure=new_structure))
 
 
-@app.route('/delete_project/<int:project_id>', methods=['POST'])
+@bp.route('/delete_project/<int:project_id>', methods=['POST'])
 def delete_project(project_id):
-    '''
+    """"
     Delete the project.
-    '''
-    project = Project.query.filter(Project.id==project_id).first()
+    """
+    project = Project.query.filter(Project.id == project_id).first()
     project.is_deleted = True
     db.session.commit()
 
     return jsonify(status=True, status_text=gettext("Hoorah! Project was deleted."))
 
 
-@app.route('/undelete_project/<int:project_id>', methods=['POST'])
+@bp.route('/undelete_project/<int:project_id>', methods=['POST'])
 def undelete_project(project_id):
-    '''
+    """
     Undelete the project.
-    '''
-    project = Project.query.filter(Project.id==project_id).first()
+    """
+    project = Project.query.filter(Project.id == project_id).first()
     project.is_deleted = False
     db.session.commit()
 
     return jsonify(status=True, status_text=gettext("Hoorah! Project was undeleted."))
 
 
-@app.route('/add_node/<int:project_id>', methods=['POST'])
+@bp.route('/add_node/<int:project_id>', methods=['POST'])
 def add_node(project_id):
-    '''
+    """
     Add a new node to the tree and pass the created data back to the caller so it can add
     it to the tree in the browser.
-    '''
+    """
     nodes = request.get_json()
     parent_id = nodes.get('parent')
-    project = Project.query.filter(id==project_id).first()
-    parent = Structure.query.filter(id==parent_id).first()
+    project = Project.query.filter(Project.id == project_id).first()
+    parent = Structure.query.filter(Structure.id == parent_id).first()
     # Get the highest display order for this project so we can assign the new node to last place.
-    displayorder = db.session.query(db.func.max(Structure.displayorder)).filter(Project.id==project_id).scalar() + 1
+    max_display_order = db.session.query(db.func.max(Structure.displayorder)).filter(Structure.project_id == project_id).scalar()
+    displayorder = (max_display_order or 0) + 1
 
     structure = create_node(project=project, parent=parent, displayorder=displayorder)
 
@@ -209,22 +213,23 @@ def add_node(project_id):
 
 
 def create_node(project, parent=None, displayorder=1, title='New Section'):
-    '''
+    """
     Create a new node along with anything that has to be attached.
-    '''
+    """
     structure = Structure(parent=parent, title=title, displayorder=displayorder, project=project)
     db.session.add(structure)
     db.session.add(Section(body="", structure=structure))
     db.session.add(SectionSynopsis(body="", structure=structure))
     db.session.add(SectionNotes(body="", structure=structure))
+    db.session.add(SectionCharacters(body="", structure=structure))
     return structure
 
 
-@app.route('/delete_node', methods=['POST'])
+@bp.route('/delete_node', methods=['POST'])
 def delete_node():
-    '''
+    """
     Delete the node and associated section text.
-    '''
+    """
     nodes = request.get_json().get('ids')
     for node_id in nodes:
         section = Section.query.filter_by(structure_id=node_id).first()
@@ -236,11 +241,11 @@ def delete_node():
     return jsonify(status_text=gettext("Hoorah! Section was deleted."))
 
 
-@app.route('/update_node', methods=['POST'])
+@bp.route('/update_node', methods=['POST'])
 def update_node():
-    '''
+    """
     Update the node text.
-    '''
+    """
     node = request.get_json()
     node_id = node.get('id')
     node_text = node.get('text')
@@ -252,17 +257,17 @@ def update_node():
     return jsonify(status_text=gettext("Hoorah! Section was updated."))
 
 
-@app.route('/update_section', methods=['POST'])
+@bp.route('/update_section', methods=['POST'])
 def update_section():
-    section = Section.query.filter(Section.id == request.form['section_id']).first()
+    section = db.get_or_404(Section, request.form['section_id'])
     section.body = request.form['sectiontext']
     db.session.commit()
 
     return jsonify(status=True,
-                   status_text=gettext("Save was a Complete Success!"))
+                   status_text=gettext("Section save was a Complete Success!"))
 
 
-@app.route('/update_synopsis', methods=['POST'])
+@bp.route('/update_synopsis', methods=['POST'])
 def update_synopsis():
     synopsis = SectionSynopsis.query.filter(SectionSynopsis.id == request.form['synopsis_id']).first()
     synopsis_text = request.form.get('synopsis_text')
@@ -275,7 +280,7 @@ def update_synopsis():
                    status_text=gettext("Hoorah! Synopsis was updated."))
 
 
-@app.route('/update_notes', methods=['POST'])
+@bp.route('/update_notes', methods=['POST'])
 def update_notes():
     notes = SectionNotes.query.filter(SectionNotes.id == request.form['notes_id']).first()
     notes_text = request.form.get('notes_text')
@@ -288,13 +293,26 @@ def update_notes():
                    status_text=gettext("Hoorah! Notes was updated."))
 
 
-@app.route('/update_project/<int:project_id>', methods=['POST'])
-def update_project(project_id):
+@bp.route('/update_characters', methods=['POST'])
+def update_characters():
+    characters = SectionCharacters.query.filter(SectionCharacters.id == request.form['character_id']).first()
+    characters_text = request.form.get('character_text')
+    if characters_text is None:
+        return jsonify(status=False,
+                       status_text=gettext("Characters text is missing - no update was done."))
+    characters.body = characters_text
+    db.session.commit()
+    return jsonify(status=True,
+                   status_text=gettext("Hoorah! Characters was updated."))
 
-    form = ProjectForm(request.form)
+
+@bp.route('/update_project/<int:project_id>', methods=['POST'])
+def update_project(project_id):
+    form = ProjectForm()
     del form.template
-    if form.validate():
-        project = Project.query.filter(Project.id==project_id).first()
+    form.id.data = str(project_id)
+    if form.validate_on_submit():
+        project = Project.query.filter(Project.id == project_id).first()
         project.name = form.name.data
         project.description = form.description.data
         project.is_template = form.is_template.data
@@ -308,13 +326,13 @@ def update_project(project_id):
                    description_errors=form.description.errors)
 
 
-@app.route('/export_project/<int:project_id>', methods=['GET'])
+@bp.route('/export_project/<int:project_id>', methods=['GET'])
 def export_project(project_id):
-    '''
+    """
     Export the project to a file for the user to download.
     It will be a basic dump to start with to show the idea.
-    '''
-    project = Project.query.filter(Project.id==project_id).first()
+    """
+    project = Project.query.filter(Project.id == project_id).first()
     headers = Headers()
     # add a filename
     headers.add('Content-Disposition', 'attachment', filename=(project.name + '.html'))
@@ -327,11 +345,11 @@ def export_project(project_id):
     )
 
 
-@app.route('/export_project_pdf/<int:project_id>', methods=['GET'])
+@bp.route('/export_project_pdf/<int:project_id>', methods=['GET'])
 def export_project_pdf(project_id):
-    '''
+    """
     Make a PDF straight from HTML in a string and send it to the user.
-    '''
+    """
     html = ''
     for value in generate(project_id):
         html += value
@@ -339,27 +357,27 @@ def export_project_pdf(project_id):
 
 
 def generate(project_id):
-    for instance in db.session.query(Structure).filter(Structure.project_id==project_id).order_by(Structure.displayorder):
-        section = Section.query.filter(Section.structure_id==instance.id).first()
+    for instance in db.session.query(Structure).filter(Structure.project_id == project_id).order_by(
+            Structure.displayorder):
+        section = Section.query.filter(Section.structure_id == instance.id).first()
         yield section.body
 
 
-@app.route('/show_config')
+@bp.route('/show_config')
 def show_config():
-    '''
+    """
     Get the current the current configuration and then show the template.
-    '''
+    """
     config = Project.query.all()
-    return render_template('config.html',
+    return render_template('editor/config.jinja',
                            config=config)
 
 
-@app.route('/save_config', methods=['POST'])
+@bp.route('/save_config', methods=['POST'])
 def save_config():
-
     flash(gettext('Configuration Save was a Complete Success!'))
-    return redirect(url_for('show_config'))
+    return redirect(url_for('editor.show_config'))
 
-#@crsf.error_handler
-#def csrf_error(reason):
-#    return render_template('csrf_error.html', reason=reason), 400
+# @csrf.error_handler
+# def csrf_error(reason):
+#     return render_template('csrf_error.jinja', reason=reason), 400

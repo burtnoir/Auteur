@@ -1,2 +1,6 @@
-from auteur import app
-app.run(debug=True, use_debugger=False, use_reloader=False)
+# import os
+# from auteur import app
+#
+# if __name__ == '__main__':
+#     debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+#     app.run(debug=debug)

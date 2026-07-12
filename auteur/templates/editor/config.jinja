@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "editor/layout.jinja" %}
 {% block body %}
 
 <!-- 
@@ -16,7 +16,8 @@
     -
 
  -->
-  <form id="configurationform" action="{{ url_for('save_config') }}" method=post>
+  <form id="configurationform" action="{{ url_for('editor.save_config') }}" method=post>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="form-group">
       <label for="project_name">Name of New Project</label>
       <input type="text" class="form-control" id="project_name" name="project_name" placeholder="New Project Name">

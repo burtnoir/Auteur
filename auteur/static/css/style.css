@@ -1,0 +1,103 @@
+html, body    { height:100%; }
+body    { padding-bottom: 70px; }
+textarea { resize: vertical; }
+.error  { background: #f0d6d6; padding: 0.5em; }
+
+/* ---- Collapsible sidebar layout (content.jinja) ---- */
+
+:root {
+  --sidebar-w: 280px;
+  --sidebar-w-collapsed: 52px;
+}
+
+.app-shell {
+  height: calc(100vh - 53px); /* adjust to match topnav/bottombar height */
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
+  transition: flex-basis 0.18s ease, width 0.18s ease;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sidebar.collapsed {
+  flex-basis: var(--sidebar-w-collapsed);
+  width: var(--sidebar-w-collapsed);
+}
+
+.sidebar.collapsed .sidebar-body {
+  display: none;
+}
+
+.sidebar.collapsed .rail-icons {
+  display: flex;
+}
+
+.rail-icons {
+  display: none;
+}
+
+.sidebar-toggle {
+  cursor: pointer;
+}
+
+.sidebar-body {
+  overflow-y: auto;
+}
+
+.editor-area {
+  overflow-y: auto;
+}
+
+/* Accordion header styling to match the sidebar's compact, uppercase labels */
+.sb-accordion-btn {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b68;
+  padding: 0.6rem 0.75rem;
+  background: #fff;
+  box-shadow: none !important;
+}
+
+.sb-accordion-btn:not(.collapsed) {
+  background: #fff;
+  color: #2e7e40;
+}
+
+.accordion-button::after {
+  width: 0.9rem;
+  height: 0.9rem;
+  background-size: 0.9rem;
+}
+
+.accordion-body {
+  padding: 0.5rem 0.75rem 1rem;
+}
+
+.tree .list-group-item {
+  border: none;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+.tree .list-group-item.active {
+  background: #eaf6ec;
+  color: #2e7e40;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.tree .list-group-item.child {
+  padding-left: 1.75rem;
+}
+
+.toast-container {
+  z-index: 1080;
+}

@@ -65,3 +65,5 @@ target/
 .pydevproject
 /auteur.nja
 /structure_experiments.py
+/instance/test.db
+/instance/auteur.db

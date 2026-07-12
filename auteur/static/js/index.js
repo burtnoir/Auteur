@@ -1,31 +1,39 @@
 $(document).ready(
     function () {
 
-        var deleteProjectHelper = function(project_id, endpoint, parent){
-            $.ajax({
-                type: "POST",
-                url: SCRIPT_ROOT + endpoint + project_id,
-                beforeSend: csrfProtect,
-                complete: function (data) {
+        const deleteProjectHelper = function (project_id, endpoint, parent) {
 
-                    var r = data.responseJSON;
-                    if (r.status) {
+            fetch(SCRIPT_ROOT + endpoint + project_id, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        $('#statusbar').html('Problem with the delete project function.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status) {
                         // If everything went well then remove the deleted project from the list.
                         parent.hide();
-                        $('#statusbar').html(r.status_text);
+                        $('#statusbar').html(data.status_text);
                     }
-                }
-            });            
+                })
+                .catch(error => console.error('There was an error with the Delete Project Fetch operation: ', error));
+
         };
-        
+
         /**
          * Go to the server to update the project information.
          */
-        var deleteProject = function (project_id, parent) {
+        const deleteProject = function (project_id, parent) {
             deleteProjectHelper(project_id, '/delete_project/', parent);
         };
-        
-        var undeleteProject = function (project_id, parent) {
+
+        const undeleteProject = function (project_id, parent) {
             deleteProjectHelper(project_id, '/undelete_project/', parent);
         };
 

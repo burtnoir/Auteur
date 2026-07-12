@@ -1,0 +1,241 @@
+{% extends "editor/layout.jinja" %}
+{% from "bootstrap5/form.html" import render_form %}
+
+{% block navbar_buttons_after %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" type="button" id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
+      {{ _('Export') }}
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="exportMenu">
+      <li><a id="export" class="dropdown-item" href="{{ url_for('editor.export_project', project_id=project.id) }}">{{ _('HTML') }}</a></li>
+      <li><a id="export_pdf" class="dropdown-item" href="{{ url_for('editor.export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</a></li>
+    </ul>
+  </li>
+{% endblock %}
+
+{% block body %}
+<div id="mainrow" class="d-flex app-shell position-relative">
+
+  <div class="toast-container position-absolute top-0 end-0 p-3">
+    <div id="saveToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">{{ _('Saved') }}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Left rail: Project details + Sections tree -->
+  <aside class="sidebar border-end d-flex flex-column" id="leftsidebar">
+    <div class="sidebar-toggle border-bottom d-flex align-items-end justify-content-end py-2" id="toggleLeft">
+      <i class="fa-solid fa-chevron-left"></i>
+    </div>
+
+    <div class="rail-icons flex-column align-items-center gap-3 pt-3">
+      <span class="badge rounded-pill bg-success">&nbsp;</span>
+      <span class="badge rounded-pill bg-secondary">&nbsp;</span>
+    </div>
+
+    <div class="sidebar-body flex-grow-1">
+      <div class="accordion accordion-flush" id="accordionLeft">
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProjectDetails" aria-expanded="true">
+              {{ _('Project Details') }}
+            </button>
+          </h2>
+          <div id="collapseProjectDetails" class="accordion-collapse collapse show" data-bs-parent="#accordionLeft">
+            <div id="projectdisplay" class="accordion-body">
+              {{ render_form(form, id="editprojectform", novalidate=True) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSections" aria-expanded="true">
+              {{ _('Sections') }}
+            </button>
+          </h2>
+          <div id="collapseSections" class="accordion-collapse collapse show" data-bs-parent="#accordionLeft">
+            <div class="accordion-body">
+              <div class="btn-group btn-group-justified w-100 mb-2" role="group">
+                <button id="tree_add" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Add') }}</button>
+                <button id="tree_rename" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Rename') }}</button>
+                <button id="tree_delete" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Delete') }}</button>
+              </div>
+              <div id="tree"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main column: manuscript editor -->
+  <div class="d-flex flex-column flex-grow-1 min-width-0">
+    <form id="mainform" class="d-flex flex-column flex-grow-1">
+      <div class="form-group editor-area flex-grow-1">
+        <textarea id="sectiontext" name="sectiontext">{{ section.body }}</textarea>
+      </div>
+      <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}" />
+    </form>
+  </div>
+
+  <!-- Right rail: Synopsis, Characters, Notes -->
+  <aside class="sidebar border-start d-flex flex-column" id="rightsidebar">
+    <div class="sidebar-toggle border-bottom d-flex align-items-start justify-content-start py-2" id="toggleRight">
+      <i class="fa-solid fa-chevron-right"></i>
+    </div>
+
+    <div class="rail-icons flex-column align-items-center gap-3 pt-3">
+      <span class="badge rounded-pill bg-success">&nbsp;</span>
+      <span class="badge rounded-pill bg-success">&nbsp;</span>
+      <span class="badge rounded-pill bg-success">&nbsp;</span>
+    </div>
+
+    <div id="sectiondisplay" class="sidebar-body flex-grow-1">
+      <div class="accordion accordion-flush" id="accordionRight">
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSynopsis" aria-expanded="true">
+              {{ _('Synopsis') }}
+            </button>
+          </h2>
+          <div id="collapseSynopsis" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+            <div class="accordion-body">
+              <form id="synopsisform">
+                <textarea id="synopsis_text" name="synopsis_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the synopsis for this project here.') }}">{{ synopsis.body }}</textarea>
+                <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}" />
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCharacters" aria-expanded="true">
+              {{ _('Characters') }}
+            </button>
+          </h2>
+          <div id="collapseCharacters" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+            <div class="accordion-body">
+              <form id="characterform">
+                <textarea id="character_text" name="character_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the characters for this project here.') }}">{{ characters.body }}</textarea>
+                <input id="character_id" name="character_id" type="hidden" value="{{ characters.id }}" />
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="true">
+              {{ _('Notes') }}
+            </button>
+          </h2>
+          <div id="collapseNotes" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+            <div class="accordion-body">
+              <form id="notesform">
+                <textarea id="notes_text" name="notes_text" class="form-control form-control-sm" rows="4" placeholder="{{ _('Enter any notes for this section here.') }}">{{ notes.body }}</textarea>
+                <input id="notes_id" name="notes_id" type="hidden" value="{{ notes.id }}" />
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/content.js') }}"></script>
+<script>
+  // TODO see if there's a way to move this into content.js.  Maybe if the data was JSON?
+  const treeData = [
+      {% for item in structure %} {
+          "id": {{ item.id }},
+          "parent": {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
+          "text": "{{ item.title }}",
+          "data": {"displayorder": {{ item.displayorder }}},
+          "state": {
+              "opened": true,
+              "selected": {% if item.parent_id %} false {% else %} true {% endif %}
+          }
+      },
+      {% else %}
+          {
+              "id": "0",
+              "parent": "#",
+              "text": "Oops, there's no structure.  Should create the first node when creating a new project."
+          }
+      {% endfor %}
+  ];
+
+  $('#tree_add').click(function () {
+    treeAdd({{ project.id }});
+  });
+
+  $('#tree_rename').click(function () {
+    treeRename();
+  });
+
+  $('#tree_delete').click(function () {
+    treeDelete();
+  });
+
+  $('#editprojectform :input').change(function () {
+    editProject({{ project.id }});
+  });
+
+  $("#editprojectform").submit(function (event) {
+    event.preventDefault();
+    editProject({{ project.id }});
+  });
+
+  $("#mainform").submit(function (event) {
+    event.preventDefault();
+    saveText({{ project.id }});
+  });
+
+  $('#synopsisform :input').change(function () {
+    saveSynopsis();
+  });
+
+  $("#synopsisform").submit(function (event) {
+    event.preventDefault();
+    saveSynopsis();
+  });
+
+  $('#notesform :input').change(function () {
+    saveNotes();
+  });
+
+  $("#notesform").submit(function (event) {
+    event.preventDefault();
+    saveNotes();
+  });
+
+  $('#characterform :input').change(function () {
+    saveCharacters();
+  });
+
+  $("#characterform").submit(function (event) {
+    event.preventDefault();
+    saveCharacters();
+  });
+
+
+  // Save toast: fire whenever content.js dispatches a 'auteur:saved' event.
+  // See note below about adding this trigger to content.js's save callbacks.
+  const saveToastEl = document.getElementById('saveToast');
+  const saveToast = new bootstrap.Toast(saveToastEl, {delay: 1800});
+  $(document).on('auteur:saved', function () {
+    saveToast.show();
+  });
+</script>
+{% endblock %}

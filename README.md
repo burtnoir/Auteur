@@ -25,17 +25,33 @@ Anyway, the following excellent software is used / assembled here to create Aute
 * [CKEditor](http://ckeditor.com/) - any feature you could need from a editor embedded in a web page is here
 * [gettext](https://www.gnu.org/s/gettext) - for multi-lingual support
 * [WTForms](https://github.com/wtforms/wtforms) - deal with HTML forms in a consistent way throughout your app
-* [PyDev](http://www.pydev.org/) in [Eclipse](http://www.eclipse.org/) - makes things easy for the Python newcomer
 
 
 ## Running Auteur
-While it's by no means ready for production use it can be run and everything works fine.
 
-Within my PyDev project I just right click on runserver.py and ask it to run.  A new console should pop up showing it listening on 127.0.0.1.  You can now go to 127.0.0.1:5000 in your browser and see a pretty empty page.  If this gives your agrophobia a twinge you could always run the db_data_setup.py script beforehand (or afterwards) to populate the database with some example data.
+### Setup
+1. Initialize the database:
+   ```bash
+   uv run python db_data_setup.py
+   ```
 
-This is probably a good point to apologise for the error messages.  I'll make them more polite soon.
+### Running with Flask
+The project uses the Flask application factory pattern. To run it:
+```bash
+export FLASK_APP=auteur:create_app
+export FLASK_DEBUG=true
+uv run flask run
+```
+
+Alternatively, you can use the legacy `runserver.py`:
+```bash
+uv run python runserver.py
+```
 
 ## Tests
-Feel free to run the tests.py unit tests in the top level directory as a pyunit test to see how that works.  I used the Flask and PyUnit testing facilities to allow me to test the views as if they are being called from a browser.  
+Run automated tests using:
+```bash
+uv run python -m unittest tests/tests.py
+```
 
-The in memory form of the SQLLite database is used in the tests for speed and tidyness.  Flipping back if there is a problem is very simple but isn't necessary to decide if your current change can be committed or not.
+The in-memory form of the SQLite database is used in the tests for speed and tidiness.
