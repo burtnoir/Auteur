@@ -1,6 +1,6 @@
 /* ---- Page-level flex scaffold (layout.jinja) ----
    Makes container-fluid's body area grow to fill whatever space is left
-   above bottombar, with no hardcoded navbar/bottombar heights. */
+   above bottombar. */
 
 html, body {
   height: 100%;

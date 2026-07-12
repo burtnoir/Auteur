@@ -2,12 +2,8 @@ $(document).ready(
     function () {
 
         const resizer = function (ed) {
-            // const h = $('body').height(),
-            //     t = $('#topnav').height(),
-            //     f = $('#bottombar').height();
-            //    // n = $('#notesform').height();
-            // ed.resize('100%', h - t - f);
-            ed.resize('100%', 300);
+            const h = $('#body-container').height();
+            ed.resize('100%', h);
         };
 
         let timeoutID;
@@ -20,7 +16,7 @@ $(document).ready(
                 },
                 change: function (ev) {
                     window.clearTimeout(timeoutID);
-                    timeoutID = window.setTimeout(saveText, 2000);
+                    timeoutID = window.setTimeout(window.saveText, 2000);
                 }
             }
         });
@@ -380,33 +376,32 @@ $(document).ready(
         };
 
 
+        $('#synopsisform :input').change(function () {
+            window.saveSynopsis();
+        });
 
-  $('#synopsisform :input').change(function () {
-    saveSynopsis();
-  });
+        $("#synopsisform").submit(function (event) {
+            event.preventDefault();
+            window.saveSynopsis();
+        });
 
-  $("#synopsisform").submit(function (event) {
-    event.preventDefault();
-    saveSynopsis();
-  });
+        $('#notesform :input').change(function () {
+            window.saveNotes();
+        });
 
-  $('#notesform :input').change(function () {
-    saveNotes();
-  });
+        $("#notesform").submit(function (event) {
+            event.preventDefault();
+            window.saveNotes();
+        });
 
-  $("#notesform").submit(function (event) {
-    event.preventDefault();
-    saveNotes();
-  });
+        $('#characterform :input').change(function () {
+            window.saveCharacters();
+        });
 
-  $('#characterform :input').change(function () {
-    saveCharacters();
-  });
-
-  $("#characterform").submit(function (event) {
-    event.preventDefault();
-    saveCharacters();
-  });
+        $("#characterform").submit(function (event) {
+            event.preventDefault();
+            window.saveCharacters();
+        });
 
         // Whole-rail collapse toggles
         function wireRailToggle(sidebarId, toggleId, openIcon, closedIcon) {
