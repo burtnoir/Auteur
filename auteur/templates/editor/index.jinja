@@ -11,50 +11,87 @@
     <div class="row">
         <div class="col">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex align-items-center">
 
-                    <div class="btn-group">
-                        <a id="showProjects" role="button" class="btn btn-success" href="{{ url_for('editor.get_project_list') }}">{{ _('Show Projects') }}</a>
-                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="visually-hidden">{{ _('Toggle Dropdown') }}</span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item"><a id="showDeletedProjects" href="{{ url_for('editor.get_deleted_project_list') }}">{{ _('Show Deleted Projects') }}</a></li>
-                        </ul>
-                    </div>
+                    {% set showing_templates = request.endpoint in ('editor.get_template_list', 'editor.get_deleted_template_list') %}
+                    {% set showing_deleted = request.endpoint in ('editor.get_deleted_project_list', 'editor.get_deleted_template_list') %}
 
-                    <div class="btn-group pull-right">
-                        <a id="showTemplates" role="button" class="btn btn-success" href="{{ url_for('editor.get_template_list') }}">{{ _('Show Templates') }}</a>
-                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="visually-hidden">{{ _('Toggle Dropdown') }}</span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="dropdown-item"><a id="showDeletedTemplates" href="{{ url_for('editor.get_deleted_template_list') }}">{{ _('Show Deleted Templates') }}</a></li>
-                        </ul>
-                    </div>
+                    <ul class="nav nav-tabs card-header-tabs me-auto" id="listTypeTabs">
+                        <li class="nav-item">
+                            <a id="showProjects" class="nav-link {% if not showing_templates %}active{% endif %}" href="{{ url_for('editor.get_project_list') }}">{{ _('Projects') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a id="showTemplates" class="nav-link {% if showing_templates %}active{% endif %}" href="{{ url_for('editor.get_template_list') }}">{{ _('Templates') }}</a>
+                        </li>
+                    </ul>
+
+                    {% if showing_deleted %}
+                    <span class="badge bg-secondary me-3">{{ _('Deleted') }}</span>
+                    <a id="backToList" href="{{ url_for('editor.get_template_list') if showing_templates else url_for('editor.get_project_list') }}" class="text-muted me-3" title="{{ _('Back to list') }}">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    {% elif showing_templates %}
+                    <a id="showDeletedTemplates" href="{{ url_for('editor.get_deleted_template_list') }}" class="text-muted me-3" title="{{ _('Show Deleted Templates') }}">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </a>
+                    {% else %}
+                    <a id="showDeletedProjects" href="{{ url_for('editor.get_deleted_project_list') }}" class="text-muted me-3" title="{{ _('Show Deleted Projects') }}">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </a>
+                    {% endif %}
+
+                    {% if not showing_deleted %}
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#newProjectPanel" aria-expanded="false" aria-controls="newProjectPanel">
+                        <i class="fa-solid fa-plus"></i> {{ _('New') }}
+                    </button>
+                    {% endif %}
 
                 </div>
+
+                {% if not showing_deleted %}
+                <div id="newProjectPanel" class="collapse">
+                    <div class="card-body border-bottom">
+                        <h5 class="card-title">{% if showing_templates %}{{ _('New template') }}{% else %}{{ _('New project') }}{% endif %}</h5>
+                        {{ render_form(form, id="addprojectform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.add_project')) }}
+                    </div>
+                </div>
+                {% endif %}
 
                 <div id="projectlist" class="list-group list-group-flush">
                     {% for project in projects %}
                     <a class="list-group-item list-group-item-action" data-is_template={{ project.is_template }} href={{ url_for('editor.show_content', project_id=project.id) }}>
                         <div class="d-flex w-100 justify-content-between">
                             <h4 class="mb-1">{{ project.name }}</h4>
-                            <button type="button" class="btn btn-danger close deleteProject" data-project_id="{{ project.id }}" data-is_deleted={{ project.is_deleted }} aria-label="{{ _('Delete') }}"><i class="fa-regular fa-circle-xmark"></i></button>
+                            <button type="button" class="btn btn-danger close deleteProject" data-project_id="{{ project.id }}" data-is_deleted={{ project.is_deleted }} aria-label="{% if project.is_deleted %}{{ _('Restore') }}{% else %}{{ _('Delete') }}{% endif %}">
+                                {% if project.is_deleted %}<i class="fa-solid fa-rotate-left"></i>{% else %}<i class="fa-regular fa-circle-xmark"></i>{% endif %}
+                            </button>
                         </div>
                         <p class="mb-1">{{ project.short_description }}</p>
                     </a>
                     {% else %}
-                    <em>{{ _('No entries here so far') }}</em> {% endfor %}
+                    <em>{% if showing_templates %}{{ _('No templates here so far') }}{% else %}{{ _('No projects here so far') }}{% endif %}</em>
+                    {% endfor %}
                 </div>
 
             </div>
         </div>
-
-        <div class="col">
-            {{ render_form(form, id="addprojectform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.add_project')) }}
-        </div>
     </div>
 
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% if not showing_deleted %}
+<script>
+    $(function () {
+        // The tab already tells us whether this is a project or a template,
+        // so hide the checkbox rather than making the user set it manually.
+        // It stays in the DOM (just hidden) so it still submits normally.
+        $('#is_template').closest('.form-check, .mb-3').hide();
+        {% if showing_templates %}
+        $('#is_template').prop('checked', true);
+        $('#submit').attr('value', {{ _('Create template') | tojson }});
+        {% else %}
+        $('#submit').attr('value', {{ _('Create project') | tojson }});
+        {% endif %}
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -190,3 +190,14 @@ body > .container {
 .toast-container {
   z-index: 1080;
 }
+
+/* ---- Projects/Templates tabs (index.jinja) ---- */
+
+#listTypeTabs .nav-link {
+  color: #6b6b68;
+}
+
+#listTypeTabs .nav-link.active {
+  color: #2e7e40;
+  font-weight: 600;
+}
