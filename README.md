@@ -11,7 +11,7 @@ Up to this point Auteur is a single user application but that may change in the 
 ## Technology Choices
 A large part of the reason for writing Auteur was to try out an approach to writing a web application that is different to my day to day work.  Additionally I wanted to learn more about using Python to write an application.  
 
-After some investigation and going through the Django tutorials I thought I'd try Flask (thanks Django!)  Seriously, though Django is a great project with superb documentation but it was more than I thought I would need for this project.  Also being a novice Python coder I found Flask was a little more obvious about some of the things it does along with very good documentation.
+After some investigation and going through the tutorials I thought I'd try Flask.  Being a novice Python coder I found Flask was obvious in a good way about the things it does along with very good documentation.
 
 Anyway, the following excellent software is used / assembled here to create Auteur:
 * [Flask](http://flask.pocoo.org/) - a micro framework with lots of handy extensions

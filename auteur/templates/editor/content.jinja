@@ -74,15 +74,22 @@
     </div>
   </aside>
 
-  <!-- Main column: manuscript editor -->
-  <div class="d-flex flex-column flex-grow-1 min-width-0">
-    <form id="mainform" class="d-flex flex-column flex-grow-1">
-      <div class="form-group editor-area flex-grow-1">
-        <textarea id="sectiontext" name="sectiontext">{{ section.body }}</textarea>
-      </div>
-      <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}" />
-    </form>
-  </div>
+    <!-- Main column: manuscript editor -->
+    <div class="d-flex flex-column flex-grow-1 min-width-0 editor-column">
+        <form id="mainform" class="editor-pane">
+            <div class="form-group editor-area">
+                <textarea id="section_text" name="section_text">{{ section.body }}</textarea>
+            </div>
+            <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}" />
+        </form>
+
+        <div class="editor-pane editor-pane-readonly">
+            <p class="editor-pane-label mb-0">{{ _('Child Sections') }} <span class="text-body-secondary">({{ _('read-only') }})</span></p>
+            <div id="section_children_text" class="text-secondary">
+                {{ sectionchildren.body }}
+            </div>
+        </div>
+    </div>
 
   <!-- Right rail: Synopsis, Characters, Notes -->
   <aside class="sidebar border-start d-flex flex-column" id="rightsidebar">
@@ -102,14 +109,14 @@
         <div class="accordion-item">
           <h2 class="accordion-header">
             <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSynopsis" aria-expanded="true">
-              {{ _('Synopsis') }}
+              <label for="synopsis_text">{{ _('Synopsis') }}</label>
             </button>
           </h2>
           <div id="collapseSynopsis" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
             <div class="accordion-body">
               <form id="synopsisform">
-                <textarea id="synopsis_text" name="synopsis_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the synopsis for this project here.') }}">{{ synopsis.body }}</textarea>
-                <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}" />
+                  <textarea id="synopsis_text" name="synopsis_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the synopsis for this project here.') }}">{{ synopsis.body }}</textarea>
+                  <input id="synopsis_id" name="synopsis_id" type="hidden" value="{{ synopsis.id }}" />
               </form>
             </div>
           </div>
@@ -118,7 +125,7 @@
         <div class="accordion-item">
           <h2 class="accordion-header">
             <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCharacters" aria-expanded="true">
-              {{ _('Characters') }}
+              <label for="character_text">{{ _('Characters') }}</label>
             </button>
           </h2>
           <div id="collapseCharacters" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
@@ -134,7 +141,7 @@
         <div class="accordion-item">
           <h2 class="accordion-header">
             <button class="accordion-button sb-accordion-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="true">
-              {{ _('Notes') }}
+                <label for="notes_text">{{ _('Notes') }}</label>
             </button>
           </h2>
           <div id="collapseNotes" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
@@ -153,6 +160,7 @@
 
 </div>
 
+<script src="{{ url_for('static', filename='lib/markdown-text-editor/markdown-text-editor.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/content.js') }}"></script>
 <script>
   // TODO see if there's a way to move this into content.js.  Maybe if the data was JSON?

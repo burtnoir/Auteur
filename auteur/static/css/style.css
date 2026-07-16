@@ -48,6 +48,65 @@ body > .container {
   min-width: 0;
 }
 
+/* ---- Two-pane center column: editable editor + read-only child preview ---- */
+
+.editor-column {
+  min-height: 0; /* allow it to shrink within the row so its children can split it */
+}
+
+.editor-pane {
+  flex: 1 1 0; /* equal 50/50 split; change the two panes' ratio here if needed */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-pane .editor-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-pane textarea {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+}
+
+/* If markdown-text-editor.js wraps/replaces the textarea with its own element,
+   give that wrapper the same treatment. Confirmed from rendered markup: the
+   library wraps everything in .markdown-editor-wrapper and sets an inline
+   pixel height via JS on init, so we need !important to override it. */
+.editor-pane .markdown-editor-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100% !important;
+}
+
+.editor-pane-readonly {
+  border-top: 1px solid #e2e2e0;
+}
+
+/* NOTE: do NOT set a background on .editor-pane-readonly textarea directly.
+   This editor renders visible text via a separate .display-layer div
+   positioned underneath the real textarea; the textarea's own text is
+   intentionally transparent (only the caret shows). Painting a background
+   on the textarea covers that layer and makes the text disappear. If you
+   want a visual "read-only" tint, apply it to .markdown-editor-wrapper or
+   the editor's own surface/theme classes instead, once you've checked
+   which of its "fj:me-surface" elements are actually opaque. */
+
+.editor-pane-label {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b68;
+  padding: 0.4rem 0.75rem 0.25rem;
+}
+
 .sidebar {
   width: var(--sidebar-w);
   flex: 0 0 var(--sidebar-w);

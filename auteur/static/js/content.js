@@ -1,37 +1,22 @@
 $(document).ready(
     function () {
 
-        const resizer = function (ed) {
-            const h = $('#body-container').height();
-            ed.resize('100%', h);
-        };
+        // const resizer = function (ed) {
+        //     const h = $('#body-container').height();
+        //     ed.resize('100%', h);
+        // };
 
-        let timeoutID;
-        // Replace the textarea with a CKEditor
-        // instance, using default configuration.
-        CKEDITOR.replace('sectiontext', {
-            on: {
-                instanceReady: function (ev) {
-                    resizer(ev.editor);
-                },
-                change: function (ev) {
-                    window.clearTimeout(timeoutID);
-                    timeoutID = window.setTimeout(window.saveText, 2000);
-                }
+        // $(window).resize(function () {
+        //     resizer(CKEDITOR.instances.sectiontext);
+        // });
+
+        const sectionEditor = new MarkdownEditor('#section_text', {
+            'mode': 'hybrid',
+            'placeholder': 'Write your markdown...',
+            'toolbar': ['heading', 'bold', 'italic', 'strikethrough', 'ul', 'ol', 'checklist', 'blockquote', 'link', 'preview'],
+            'onChange':function(value) {
+                window.saveText();
             }
-        });
-
-        $(window).resize(function () {
-            resizer(CKEDITOR.instances.sectiontext);
-        });
-
-        // Toggle the off canvas element.
-        $('[data-toggle="offcanvasright"]').click(function () {
-            $('#mainrow').removeClass('row-offcanvas-left').addClass('row-offcanvas-right').toggleClass('active');
-        });
-
-        $('[data-toggle="offcanvasleft"]').click(function () {
-            $('#mainrow').addClass('row-offcanvas-left').removeClass('row-offcanvas-right').toggleClass('active');
         });
 
 
@@ -57,7 +42,9 @@ $(document).ready(
                     })
                     .then(data => {
                         $('#section_id').val(data.section_id);
-                        CKEDITOR.instances.sectiontext.setData(data.section_text);
+                        $('#section_text').val(data.section_text);
+                        $('#section_children_text').html(data.section_children_text);
+                        sectionEditor.render();
                         $('#synopsis_id').val(data.synopsis_id);
                         $('#synopsis_text').val(data.synopsis_text);
                         $('#notes_id').val(data.notes_id);
@@ -261,12 +248,7 @@ $(document).ready(
         /**
          * Go to the server to save the section text.
          */
-        window.saveText = function () {
-
-            // Update the editor before submitting so we get the data sent.
-            for (let instance in CKEDITOR.instances) {
-                CKEDITOR.instances[instance].updateElement();
-            }
+        window.saveText = function (value) {
 
             // Post the data to be saved and notify the user when it's done.
             const formData = new FormData($("#mainform")[0]);

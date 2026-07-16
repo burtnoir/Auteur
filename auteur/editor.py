@@ -8,6 +8,7 @@ from flask_babel import gettext, Babel
 from flask.json import jsonify
 from flask_weasyprint import HTML, render_pdf
 from auteur.forms import ProjectForm
+import markdown
 
 bp = Blueprint('editor', __name__)
 
@@ -65,6 +66,7 @@ def show_content(project_id, structure_id):
     if structure_id is None:
         structure_id = structure[0].id
     section = Section.query.filter_by(structure_id=structure_id).first()
+    sectionchildren = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
     characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
@@ -78,10 +80,39 @@ def show_content(project_id, structure_id):
                            project=project,
                            structure=structure,
                            section=section,
+                         #  sectionchildren=markdown.markdown(sectionchildren),
+                           sectionchildren=sectionchildren,
                            synopsis=synopsis,
                            notes=notes,
                            characters=characters,
                            form=form)
+
+
+def collect_descendant_section_text(structure_id, text_parts):
+    """
+    Recursively walk the descendants of the given structure node, appending
+    each one's section text to text_parts in the same order as the node
+    hierarchy (i.e. a depth-first walk, with each level ordered by
+    displayorder - the same ordering used to build the tree in content.jinja).
+    """
+    children = Structure.query.filter_by(parent_id=structure_id).order_by(Structure.displayorder).all()
+    for child in children:
+        section = Section.query.filter_by(structure_id=child.id).first()
+        if section and section.body:
+            text_parts.append(section.body)
+        # Recurse into this child's own descendants before moving on to the
+        # next sibling, so the result reflects the tree's depth-first order.
+        collect_descendant_section_text(child.id, text_parts)
+
+
+def get_descendant_section_text(structure_id):
+    """
+    Get the concatenated text of all descendants of the given structure node,
+    with each piece separated by a blank line for readability.
+    """
+    text_parts = []
+    collect_descendant_section_text(structure_id, text_parts)
+    return '\n\n'.join(text_parts)
 
 
 @bp.route('/get_section', methods=['GET'])
@@ -96,6 +127,7 @@ def get_section():
     characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
     return jsonify(section_text=section.body,
                    section_id=section.id,
+                   section_children_text=markdown.markdown(get_descendant_section_text(structure_id)),
                    synopsis_text=synopsis.body,
                    synopsis_id=synopsis.id,
                    notes_text=notes.body,
@@ -260,7 +292,7 @@ def update_node():
 @bp.route('/update_section', methods=['POST'])
 def update_section():
     section = db.get_or_404(Section, request.form['section_id'])
-    section.body = request.form['sectiontext']
+    section.body = request.form['section_text']
     db.session.commit()
 
     return jsonify(status=True,
