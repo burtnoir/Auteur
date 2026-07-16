@@ -127,7 +127,7 @@ $(document).ready(
                     // the information needed. Id will be passed back from the
                     // server.
                     const new_node = ref.create_node(sel, {
-                        "text": responseJSON.text,
+                        "text": data.text,
                         "type": "file",
                         "data": {
                             "treeid": data.id,
