@@ -27,21 +27,21 @@
 
                     {% if showing_deleted %}
                     <span class="badge bg-secondary me-3">{{ _('Deleted') }}</span>
-                    <a id="backToList" href="{{ url_for('editor.get_template_list') if showing_templates else url_for('editor.get_project_list') }}" class="text-muted me-3" title="{{ _('Back to list') }}">
-                        <i class="fa-solid fa-arrow-left"></i>
+                    <a id="backToList" role="button" href="{{ url_for('editor.get_template_list') if showing_templates else url_for('editor.get_project_list') }}" class="btn btn-outline-info me-2" title="{{ _('Back to list') }}">
+                        {{ _('Back to list') }}
                     </a>
                     {% elif showing_templates %}
-                    <a id="showDeletedTemplates" href="{{ url_for('editor.get_deleted_template_list') }}" class="text-muted me-3" title="{{ _('Show Deleted Templates') }}">
-                        <i class="fa-regular fa-trash-can"></i>
+                    <a id="showDeletedTemplates" role="button" href="{{ url_for('editor.get_deleted_template_list') }}" class="btn btn-outline-info me-2" title="{{ _('Show Deleted Templates') }}">
+                        {{ _('Show Deleted Templates') }}
                     </a>
                     {% else %}
-                    <a id="showDeletedProjects" href="{{ url_for('editor.get_deleted_project_list') }}" class="text-muted me-3" title="{{ _('Show Deleted Projects') }}">
-                        <i class="fa-regular fa-trash-can"></i>
+                    <a id="showDeletedProjects" role="button" href="{{ url_for('editor.get_deleted_project_list') }}" class="btn btn-outline-info me-2" title="{{ _('Show Deleted Projects') }}">
+                        {{ _('Show Deleted Projects') }}
                     </a>
                     {% endif %}
 
                     {% if not showing_deleted %}
-                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#newProjectPanel" aria-expanded="false" aria-controls="newProjectPanel">
+                    <button type="button" class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#newProjectPanel" aria-expanded="false" aria-controls="newProjectPanel">
                         <i class="fa-solid fa-plus"></i> {{ _('New') }}
                     </button>
                     {% endif %}
