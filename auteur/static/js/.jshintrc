@@ -6,7 +6,6 @@
   "browser": true,
   "devel": true,
   "globals": {
-    "CKEDITOR": false,
     "$": false
   }
 }

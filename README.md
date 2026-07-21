@@ -22,7 +22,7 @@ Anyway, the following excellent software is used / assembled here to create Aute
 * [SQLLite](https://sqlite.org/) - a lightweight database, ideal while the application is still single user and while trying out development ideas due to the very low setup overhead
 * [Bootstrap](http://getbootstrap.com/) - a nice simple layout framework for the front end.  They provide some sensible options for the look and feel of your components as well
 * [jQuery](http://jquery.com/) - smooth out much of the annoyance of dealing with different browsers and the DOM in general
-* [CKEditor](http://ckeditor.com/) - any feature you could need from a editor embedded in a web page is here
+* [Markdown Text Editor](https://github.com/nezanuha/markdown-text-editor/tree/main) - a markdown editor that's very easy to embed
 * [gettext](https://www.gnu.org/s/gettext) - for multi-lingual support
 * [WTForms](https://github.com/wtforms/wtforms) - deal with HTML forms in a consistent way throughout your app
 
