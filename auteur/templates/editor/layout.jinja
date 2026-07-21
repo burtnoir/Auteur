@@ -31,6 +31,8 @@
     <script src="{{ url_for('static', filename='lib/jstree/jstree.min.js') }}"></script>
     <script>
         SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
+        document.documentElement.setAttribute('data-bs-theme', '{{ config.theme }}');
+        document.documentElement.setAttribute('data-theme', '{{ config.theme }}');
     </script>
 </head>
 

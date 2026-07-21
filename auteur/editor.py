@@ -3,11 +3,12 @@ from flask import (
     stream_with_context
 )
 from werkzeug.datastructures import Headers
-from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters
+from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
+    Configuration
 from flask_babel import gettext, Babel
 from flask.json import jsonify
 from flask_weasyprint import HTML, render_pdf
-from auteur.forms import ProjectForm
+from auteur.forms import ProjectForm, ConfigurationForm
 import markdown
 
 bp = Blueprint('editor', __name__)
@@ -43,17 +44,20 @@ def get_deleted_project_list():
 
 def get_project_list_helper(projects):
     session.pop('project_id', None)
+    config = Configuration.query.filter_by(id=1).first()
     form = ProjectForm(request.form)
     form.template.choices = [(t.id, t.name) for t in Project.query.filter(Project.is_template == True, Project.is_deleted == False).order_by('name').all()]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
     return render_template('editor/index.jinja',
                            projects=projects,
+                           config=config,
                            form=form)
 
 
 @bp.route('/project/<int:project_id>/', defaults={'structure_id': None})
 @bp.route('/project/<int:project_id>/<int:structure_id>')
 def show_content(project_id, structure_id):
+    config = Configuration.query.filter_by(id=1).first()
     # show the project with the given id, the id is an integer
     project = Project.query.filter_by(id=project_id).first()
     form = ProjectForm(obj=project)
@@ -70,17 +74,12 @@ def show_content(project_id, structure_id):
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
     characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
-    # TODO Decide if setting a session key-value is needed - was using it for the project form validator
-    # but I have a different way to do it now where the project_id is stored on the
-    # project form so we might not need to use the session.  Probably better
-    # as it avoids making the project id global which needs managing compared to
-    # a property on the form which will only live for the life of the object instance.
-    # session['project_id'] = project_id
+
     return render_template('editor/content.jinja',
+                           config=config,
                            project=project,
                            structure=structure,
                            section=section,
-                         #  sectionchildren=markdown.markdown(sectionchildren),
                            sectionchildren=sectionchildren,
                            synopsis=synopsis,
                            notes=notes,
@@ -395,20 +394,37 @@ def generate(project_id):
         yield section.body
 
 
-@bp.route('/show_config')
-def show_config():
+@bp.route('/show_config', defaults={'config_id': 1})
+@bp.route('/show_config/<int:config_id>/')
+def show_config(config_id):
     """
-    Get the current the current configuration and then show the template.
+    Get the current the current configuration and then show the configuration form template.
     """
-    config = Project.query.all()
+    config = Configuration.query.filter_by(id=config_id).first()
+    form = ConfigurationForm(obj=config)
     return render_template('editor/config.jinja',
-                           config=config)
+                           config=config,
+                           form=form)
 
 
 @bp.route('/save_config', methods=['POST'])
 def save_config():
-    flash(gettext('Configuration Save was a Complete Success!'))
-    return redirect(url_for('editor.show_config'))
+    session.pop('project_id', None)
+    form = ConfigurationForm(request.form)
+
+    if form.validate():
+        configuration = Configuration.query.filter_by(id=form.id.data).first()
+        if configuration is None:
+            configuration = Configuration(theme=form.theme.data)
+            db.session.add(configuration)
+        else:
+            configuration.theme = form.theme.data
+        db.session.commit()
+        flash(gettext('Configuration Save was a Complete Success!'))
+        return redirect(url_for('editor.show_config'))
+
+    configuration = Configuration.query.filter_by(id=form.id.data).first()
+    return render_template('editor/config.jinja', config=configuration, form=form)
 
 # @csrf.error_handler
 # def csrf_error(reason):

@@ -135,3 +135,19 @@ class SectionCharacters(db.Model):
 
     def __repr__(self):
         return '<Section Characters %r>' % self.body
+
+
+class Configuration(db.Model):
+    """
+    A simple global preferences object.  Once we have users then we will have a user preference object that can override the global.
+    TODO Need a migration script - easy enough for this one but it will be good to have a mechanism for is going forward.  Do blueprints create their own databases?
+    """
+    __tablename__ = 'configuration'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    theme: Mapped[str] = mapped_column(String(50))
+
+    def __init__(self, theme):
+        self.theme = theme
+
+    def __repr__(self):
+        return '<Configuration %r>' % self.theme

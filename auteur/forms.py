@@ -40,3 +40,8 @@ class ProjectForm(FlaskForm):
         num_same_names = query.scalar()
         if num_same_names > 0:
             raise ValidationError(lazy_gettext('Name already used.  Maybe a writer should try to be more original?'))
+
+class ConfigurationForm(FlaskForm):
+    id = HiddenField()
+    theme = SelectField(lazy_gettext('Theme'), choices=[('light', lazy_gettext('Light (Default)')), ('dark', lazy_gettext('Dark'))])
+    submit = SubmitField(lazy_gettext('Save'))
