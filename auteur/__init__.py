@@ -5,6 +5,7 @@ from flask_babel import Babel
 from flask_bootstrap import Bootstrap5
 import os
 
+from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
 
 
@@ -63,16 +64,26 @@ def create_app(test_config=None):
 
     @app.cli.command('init-db')
     def init_db_command():
-        """Create the database tables if they don't already exist.
-
-        This makes sure the SQLite file configured via SQLALCHEMY_DATABASE_URI
-        (see instance/config.py) always has the expected schema, without
-        touching any data that might already be there.
-        Run it with: flask --app auteur:create_app init-db
+        """
+            Create the database tables if they don't already exist.
+            This makes sure the SQLite file configured via SQLALCHEMY_DATABASE_URI
+            (see instance/config.py) always has the expected schema, without
+            touching any data that might already be there.
+            Run it with: flask --app auteur:create_app init-db
         """
         with app.app_context():
             db.create_all()
         click.echo('Initialized the database at %s' % app.config['SQLALCHEMY_DATABASE_URI'])
+
+    @app.cli.command('migrate-db')
+    def migrate_db_command():
+        """
+            Migrate the database tables
+            Run it with: flask --app auteur:create_app migrate-db
+         """
+        with app.app_context():
+            migrate = Migrate(app, db)
+        click.echo('Migrated the database at %s' % app.config['SQLALCHEMY_DATABASE_URI'])
 
     from . import editor
     app.register_blueprint(editor.bp)

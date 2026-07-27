@@ -1,37 +1,29 @@
-$(document).ready(
-    function () {
+document.addEventListener("DOMContentLoaded", (event) => {
 
-        // const resizer = function (ed) {
-        //     const h = $('#body-container').height();
-        //     ed.resize('100%', h);
-        // };
+    const sectionEditor = new MarkdownEditor('#section_text', {
+        'mode': 'hybrid',
+        'placeholder': 'Write your markdown...',
+        'toolbar': ['heading', 'bold', 'italic', 'strikethrough', 'ul', 'ol', 'checklist', 'blockquote', 'link', 'preview'],
+        'onChange': function (value) {
+            window.saveText();
+        }
+    });
 
-        // $(window).resize(function () {
-        //     resizer(CKEDITOR.instances.sectiontext);
-        // });
-
-        const sectionEditor = new MarkdownEditor('#section_text', {
-            'mode': 'hybrid',
-            'placeholder': 'Write your markdown...',
-            'toolbar': ['heading', 'bold', 'italic', 'strikethrough', 'ul', 'ol', 'checklist', 'blockquote', 'link', 'preview'],
-            'onChange':function(value) {
-                window.saveText();
-            }
-        });
-
-
-        // Set up the tree. Needs an array of JSON objects.
-        $('#tree').on('changed.jstree',
-            function (e, data) {
-                // Nothing to do for a deleted node as it has gone away
-                // and taken the text with it.
-                if (data.action === 'rename_node' || data.action === 'delete_node') {
-                    return true;
-                }
+    const projectId = $('#tree').data('project-id');
+    const projectTree = new mar10.Wunderbaum(
+        {
+            "element": document.getElementById("tree"),
+            "id": "wunderbaum_tree",
+            "iconMap": "fontawesome6",
+            "source": {
+                "url": SCRIPT_ROOT + '/get_project_tree',
+                "params": {"project_id": projectId}
+            },
+            "activate": function (e) {
                 // If more than one was selected we just use the first
                 // one to get the section text.
                 fetch(SCRIPT_ROOT + '/get_section?' + new URLSearchParams({
-                    structure_id: data.instance.get_node(data.selected[0]).id
+                    structure_id: e.node.data.id
                 }))
                     .then(response => {
                         if (!response.ok) {
@@ -53,38 +45,40 @@ $(document).ready(
                         $('#character_text').val(data.characters_text);
                     })
                     .catch(error => console.error('There was an error with the Get Section Fetch operation: ', error));
-
-            }).on('rename_node.jstree', function (evt, data) {
-            // Post the data to be saved and notify the user when it's done.
-            fetch(SCRIPT_ROOT + '/update_node', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
-                },
-                body: JSON.stringify({
-                    "id": data.node.id,
-                    "text": data.text
-                }, null, '\t')
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        console.log('Problem with the update_node: %o', response.json());
-                        $('#statusbar').html('Problem with the update_node');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    $('#statusbar').html(data.status_text);
-                })
-                .catch(error => console.error('There was an error with the Update Node Fetch operation: ', error));
-
-        }).jstree({
-            'core': {
-                "check_callback": true,
-                'data': treeData
+            },
+            "edit": {
+                // Controls the node renaming operation.
+                "trigger": ["clickActive", "F2"],
+                "select": true,
+                "apply": function (e) {
+                    // Post the data to be saved and notify the user when it's done.
+                    fetch(SCRIPT_ROOT + '/update_node', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
+                        },
+                        body: JSON.stringify({
+                            "id": e.node.data.id,
+                            "text": e.newValue
+                        }, null, '\t')
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                console.log('Problem with the update_node: %o', response.json());
+                                $('#statusbar').html('Problem with the update_node');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            $('#statusbar').html(data.status_text);
+                        })
+                        .catch(error => console.error('There was an error with the Update Node Fetch operation: ', error));
+                }
             }
-        });
+        }
+    );
+
 
         /**
          * Go to the server, add the new database entry and only then create
@@ -145,19 +139,6 @@ $(document).ready(
                 })
                 .catch(error => console.error('There was an error with the Tree Add Fetch operation: ', error));
 
-        };
-
-        /**
-         * Find out which node has been selected and switch it to edit mode.
-         */
-        window.treeRename = function () {
-            let ref = $('#tree').jstree(true),
-                sel = ref.get_selected();
-            if (!sel.length) {
-                return false;
-            }
-            sel = sel[0];
-            ref.edit(sel);
         };
 
         /**

@@ -15,18 +15,19 @@
     {{ bootstrap.load_css() }}
 
     <!-- Font Awesome icons - free set created as a kit under my account -->
-    <script src="https://kit.fontawesome.com/4bd37c9289.js" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='lib/fontawesome.js') }}" crossorigin="anonymous"></script>
 
     <!-- Tree plugin -->
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='lib/jstree/style.min.css') }}">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='lib/wunderbaum/wunderbaum.css') }}">
+
+    <!-- jQuery -->
+    <script src="{{ url_for('static', filename='lib/jquery-4.0.0.min.js') }}"></script>
+    <!-- Tree plugin -->
+    <!-- Using the tree: https://github.com/mar10/wunderbaum/tree/main to avoid jQuery dependency and get some more functionality -->
+    <script src="{{ url_for('static', filename='lib/wunderbaum/wunderbaum.umd.min.js') }}"></script>
+
     <!-- Local Styles -->
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
-
-    <!-- Now the javascript -->
-    <!-- jQuery -->
-    <script src="{{ url_for('static', filename='lib/jquery-3.7.1.slim.min.js') }}"></script>
-    <!-- Tree plugin -->
-    <script src="{{ url_for('static', filename='lib/jstree/jstree.min.js') }}"></script>
     <script>
         SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
         document.documentElement.setAttribute('data-bs-theme', '{{ config.theme }}');
@@ -48,6 +49,9 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     {% block navbar_buttons_after %}{% endblock %}
+                    <li class="nav-item">
+                        <a id="config" href="{{ url_for('editor.show_config') }}" role="button" class="nav-link" title="{{ _('Configuration') }}"><i class="fa-solid fa-gear"></i></a>
+                    </li>
                 </ul>
             </div>
         </nav>

@@ -2,6 +2,7 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for, Response, session, current_app,
     stream_with_context
 )
+from jinja2.nodes import Dict
 from werkzeug.datastructures import Headers
 from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
     Configuration
@@ -63,11 +64,11 @@ def show_content(project_id, structure_id):
     form = ProjectForm(obj=project)
     del form.template
     del form.submit
-    structure = Structure.query.filter_by(project_id=project.id)
 
     # If the id wasn't passed (probably because the call is from the project page)
     # then open the first structure item's text.
     if structure_id is None:
+        structure = Structure.query.filter_by(project_id=project.id)
         structure_id = structure[0].id
     section = Section.query.filter_by(structure_id=structure_id).first()
     sectionchildren = Section.query.filter_by(structure_id=structure_id).first()
@@ -78,7 +79,6 @@ def show_content(project_id, structure_id):
     return render_template('editor/content.jinja',
                            config=config,
                            project=project,
-                           structure=structure,
                            section=section,
                            sectionchildren=sectionchildren,
                            synopsis=synopsis,
@@ -112,6 +112,49 @@ def get_descendant_section_text(structure_id):
     text_parts = []
     collect_descendant_section_text(structure_id, text_parts)
     return '\n\n'.join(text_parts)
+
+
+def create_tree_item_children(children):
+    tree_item_children = []
+    for child in children:
+        tree_item_children.append(
+            {"id": child.id, "title": child.title, "type": "folder", "expanded": False, "children": create_tree_item_children(child.children)})
+    return tree_item_children
+
+
+@bp.route('/get_project_tree', methods=['GET'])
+def get_project_tree():
+    """
+    Get the project tree.
+    """
+    project_id = request.args.get('project_id', 0, type=int)
+    structure = Structure.query.filter_by(project_id=project_id).first()
+    tree_data = {"types": {
+        "book": {"icon": "fa-solid fa-book"},
+        "chapter": {"icon": "fa-solid fa-folder", "classes": "bold-style"}
+    }, "children": [{"id": structure.id, "title": structure.title, "type": "book", "expanded": True,
+                     "children": create_tree_item_children(structure.children)}]}
+
+    """
+    The existing code to turn the structure data into a jsTree payload looks like this.  I'd like to change this into 
+    a python approach to turn the data into Wunderbaum data and return it as JSON.  That keeps the data wrangling server
+    side and lets the template and JS deal with presentation and user interaction.
+      const treeData = [
+      {% for item in structure %} {
+          "id": {{ item.id }},
+          "parent": {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
+          "text": "{{ item.title }}",
+          "data": {"displayorder": {{ item.displayorder }}},
+          "state": {
+              "opened": true,
+              "selected": {% if item.parent_id %} false {% else %} true {% endif %}
+          }
+      },
+      {% endfor %}
+  ];
+    """
+
+    return jsonify(tree_data)
 
 
 @bp.route('/get_section', methods=['GET'])

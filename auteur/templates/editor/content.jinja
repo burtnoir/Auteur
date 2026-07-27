@@ -45,7 +45,7 @@
               {{ _('Project Details') }}
             </button>
           </h2>
-          <div id="collapseProjectDetails" class="accordion-collapse collapse show" data-bs-parent="#accordionLeft">
+          <div id="collapseProjectDetails" class="accordion-collapse collapse show">
             <div id="projectdisplay" class="accordion-body">
               {{ render_form(form, id="editprojectform", novalidate=True) }}
             </div>
@@ -58,14 +58,13 @@
               {{ _('Sections') }}
             </button>
           </h2>
-          <div id="collapseSections" class="accordion-collapse collapse show" data-bs-parent="#accordionLeft">
+          <div id="collapseSections" class="accordion-collapse collapse show">
             <div class="accordion-body">
               <div class="btn-group btn-group-justified w-100 mb-2" role="group">
                 <button id="tree_add" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Add') }}</button>
-                <button id="tree_rename" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Rename') }}</button>
                 <button id="tree_delete" type="button" class="btn btn-sm btn-outline-secondary">{{ _('Delete') }}</button>
               </div>
-              <div id="tree"></div>
+              <div id="tree" data-project-id="{{ project.id }}"></div>
             </div>
           </div>
         </div>
@@ -112,7 +111,7 @@
               <label for="synopsis_text">{{ _('Synopsis') }}</label>
             </button>
           </h2>
-          <div id="collapseSynopsis" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+          <div id="collapseSynopsis" class="accordion-collapse collapse show">
             <div class="accordion-body">
               <form id="synopsisform">
                   <textarea id="synopsis_text" name="synopsis_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the synopsis for this project here.') }}">{{ synopsis.body }}</textarea>
@@ -128,7 +127,7 @@
               <label for="character_text">{{ _('Characters') }}</label>
             </button>
           </h2>
-          <div id="collapseCharacters" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+          <div id="collapseCharacters" class="accordion-collapse collapse show">
             <div class="accordion-body">
               <form id="characterform">
                 <textarea id="character_text" name="character_text" class="form-control form-control-sm" rows="5" placeholder="{{ _('Enter the characters for this project here.') }}">{{ characters.body }}</textarea>
@@ -144,7 +143,7 @@
                 <label for="notes_text">{{ _('Notes') }}</label>
             </button>
           </h2>
-          <div id="collapseNotes" class="accordion-collapse collapse show" data-bs-parent="#accordionRight">
+          <div id="collapseNotes" class="accordion-collapse collapse show">
             <div class="accordion-body">
               <form id="notesform">
                 <textarea id="notes_text" name="notes_text" class="form-control form-control-sm" rows="4" placeholder="{{ _('Enter any notes for this section here.') }}">{{ notes.body }}</textarea>
@@ -163,33 +162,9 @@
 <script src="{{ url_for('static', filename='lib/markdown-text-editor/markdown-text-editor.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/content.js') }}"></script>
 <script>
-  // TODO see if there's a way to move this into content.js.  Maybe if the data was JSON?
-  const treeData = [
-      {% for item in structure %} {
-          "id": {{ item.id }},
-          "parent": {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
-          "text": "{{ item.title }}",
-          "data": {"displayorder": {{ item.displayorder }}},
-          "state": {
-              "opened": true,
-              "selected": {% if item.parent_id %} false {% else %} true {% endif %}
-          }
-      },
-      {% else %}
-          {
-              "id": "0",
-              "parent": "#",
-              "text": "Oops, there's no structure.  Should create the first node when creating a new project."
-          }
-      {% endfor %}
-  ];
 
   $('#tree_add').click(function () {
     treeAdd({{ project.id }});
-  });
-
-  $('#tree_rename').click(function () {
-    treeRename();
   });
 
   $('#tree_delete').click(function () {
