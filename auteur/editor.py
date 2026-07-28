@@ -112,6 +112,29 @@ def get_descendant_section_text(structure_id):
     collect_descendant_section_text(structure_id, text_parts)
     return '\n\n'.join(text_parts)
 
+def build_export_sections(project_id):
+    """
+    Walk the whole project tree in document order (depth-first, respecting
+    displayorder at each level) and return a flat list of
+    {'title', 'body_html', 'level'} dicts ready for the export template.
+    """
+    sections = []
+
+    def add(structure, level):
+        section = Section.query.filter_by(structure_id=structure.id).first()
+        sections.append({
+            'title': structure.title,
+            'body_html': markdown.markdown(section.body) if section and section.body else '',
+            'level': level,
+        })
+        for child in Structure.query.filter_by(parent_id=structure.id).order_by(Structure.displayorder).all():
+            add(child, level + 1)
+
+    root = Structure.query.filter_by(project_id=project_id, parent_id=None).first()
+    if root:
+        add(root, 0)
+
+    return sections
 
 def create_tree_item_children(children):
     tree_item_children = []
@@ -401,39 +424,20 @@ def update_project(project_id):
 
 @bp.route('/export_project/<int:project_id>', methods=['GET'])
 def export_project(project_id):
-    """
-    Export the project to a file for the user to download.
-    It will be a basic dump to start with to show the idea.
-    """
     project = Project.query.filter(Project.id == project_id).first()
+    html = render_template('editor/export.jinja', project=project,
+                           sections=build_export_sections(project_id))
     headers = Headers()
-    # add a filename
     headers.add('Content-Disposition', 'attachment', filename=(project.name + '.html'))
-
-    # stream the response as the data is generated
-    # default mimetype is text/html which is what we want in this case.
-    return Response(
-        stream_with_context(generate(project_id)),
-        headers=headers
-    )
+    return Response(html, headers=headers)
 
 
 @bp.route('/export_project_pdf/<int:project_id>', methods=['GET'])
 def export_project_pdf(project_id):
-    """
-    Make a PDF straight from HTML in a string and send it to the user.
-    """
-    html = ''
-    for value in generate(project_id):
-        html += value
+    project = Project.query.filter(Project.id == project_id).first()
+    html = render_template('editor/export.jinja', project=project,
+                           sections=build_export_sections(project_id))
     return render_pdf(HTML(string=html))
-
-
-def generate(project_id):
-    for instance in db.session.query(Structure).filter(Structure.project_id == project_id).order_by(
-            Structure.displayorder):
-        section = Section.query.filter(Section.structure_id == instance.id).first()
-        yield section.body
 
 
 @bp.route('/show_config', defaults={'config_id': 1})
