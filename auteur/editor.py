@@ -1,16 +1,16 @@
+import markdown
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, Response, session, current_app,
-    stream_with_context
+    Blueprint, flash, redirect, render_template, request, url_for, Response, session, stream_with_context
 )
-from jinja2.nodes import Dict
+from flask.json import jsonify
+from flask_babel import gettext
+from flask_weasyprint import HTML, render_pdf
+from flask_wtf.csrf import CSRFError
 from werkzeug.datastructures import Headers
+
+from auteur.forms import ProjectForm, ConfigurationForm
 from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
     Configuration
-from flask_babel import gettext, Babel
-from flask.json import jsonify
-from flask_weasyprint import HTML, render_pdf
-from auteur.forms import ProjectForm, ConfigurationForm
-import markdown
 
 bp = Blueprint('editor', __name__)
 
@@ -71,7 +71,6 @@ def show_content(project_id, structure_id):
         structure = Structure.query.filter_by(project_id=project.id)
         structure_id = structure[0].id
     section = Section.query.filter_by(structure_id=structure_id).first()
-    sectionchildren = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
     characters = SectionCharacters.query.filter_by(structure_id=structure_id).first()
@@ -80,7 +79,7 @@ def show_content(project_id, structure_id):
                            config=config,
                            project=project,
                            section=section,
-                           sectionchildren=sectionchildren,
+                           section_children_text=markdown.markdown(get_descendant_section_text(structure_id)),
                            synopsis=synopsis,
                            notes=notes,
                            characters=characters,
@@ -469,6 +468,6 @@ def save_config():
     configuration = Configuration.query.filter_by(id=form.id.data).first()
     return render_template('editor/config.jinja', config=configuration, form=form)
 
-# @csrf.error_handler
-# def csrf_error(reason):
-#     return render_template('csrf_error.jinja', reason=reason), 400
+@bp.app_errorhandler(CSRFError)
+def handle_csrf_error(error):
+    return render_template('editor/csrf_error.jinja', reason=error.description), 400

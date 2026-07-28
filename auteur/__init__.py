@@ -6,7 +6,7 @@ from flask_bootstrap import Bootstrap5
 import os
 
 from flask_migrate import Migrate
-from flask_wtf import CSRFProtect
+from .extensions import csrf
 
 
 # create our little application :)
@@ -19,7 +19,7 @@ def create_app(test_config=None):
     )
     # app.config.from_object('config')
     #
-    csrf = CSRFProtect(app)
+    csrf.init_app(app)
     # toolbar = DebugToolbarExtension(app)
 
     if test_config is None:
