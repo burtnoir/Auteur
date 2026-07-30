@@ -140,7 +140,7 @@ def create_tree_item_children(children):
     tree_item_children = []
     for child in children:
         tree_item_children.append(
-            {"id": child.id, "title": child.title, "type": "folder", "expanded": False, "children": create_tree_item_children(child.children)})
+            {"id": child.id, "key": child.id, "title": child.title, "type": "folder", "expanded": False, "children": create_tree_item_children(child.children)})
     return tree_item_children
 
 
@@ -154,7 +154,7 @@ def get_project_tree():
     tree_data = {"types": {
         "book": {"icon": "fa-solid fa-book"},
         "chapter": {"icon": "fa-solid fa-folder", "classes": "bold-style"}
-    }, "children": [{"id": structure.id, "title": structure.title, "type": "book", "expanded": True,
+    }, "children": [{"id": structure.id, "key": structure.id, "title": structure.title, "type": "book", "expanded": True,
                      "children": create_tree_item_children(structure.children)}]}
 
     """
@@ -302,9 +302,7 @@ def add_node(project_id):
 
     db.session.commit()
 
-    return jsonify(id=structure.id,
-                   text=structure.title,
-                   displayorder=structure.displayorder,
+    return jsonify(children = [{"id": structure.id, "key": structure.id, "title": structure.title, "type": "book", "expanded": True, "children": []}],
                    status_text=gettext("Hoorah! Section was added."))
 
 

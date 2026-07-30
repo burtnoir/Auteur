@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
                 // If more than one was selected we just use the first
                 // one to get the section text.
                 fetch(SCRIPT_ROOT + '/get_section?' + new URLSearchParams({
-                    structure_id: e.node.data.id
+                    structure_id: e.node.key
                 }))
                     .then(response => {
                         if (!response.ok) {
@@ -88,17 +88,12 @@ document.addEventListener("DOMContentLoaded", (event) => {
         window.treeAdd = function (project_id) {
 
             // First get the selected node so we know the parent.
-            let ref = $('#tree').jstree(true),
-                sel = ref.get_selected();
-            if (!sel.length) {
-                return false;
-            }
-            sel = sel[0];
+            let ref = projectTree.findKey(project_id);
 
             // Now assemble the data to send to the server.
             const x = {
                 "pos": "last",
-                "parent": sel
+                "parent": ref.id
             };
 
             fetch(SCRIPT_ROOT + '/add_node/' + project_id, {
@@ -120,21 +115,23 @@ document.addEventListener("DOMContentLoaded", (event) => {
                     // Now we can create the node because we will have all
                     // the information needed. Id will be passed back from the
                     // server.
-                    const new_node = ref.create_node(sel, {
-                        "text": data.text,
-                        "type": "file",
-                        "data": {
-                            "treeid": data.id,
-                            "displayorder": data.displayorder
-                        }
-                    }, x.pos, function (n) {
-                        $('#tree').jstree(true).set_id(n.id,
-                            data.id);
-                    });
+                    const new_node = ref.addChildren(data.children);
+                    // const new_node = ref.create_node(sel, {
+                    //     "text": data.text,
+                    //     "type": "file",
+                    //     "data": {
+                    //         "treeid": data.id,
+                    //         "displayorder": data.displayorder
+                    //     }
+                    // }, x.pos, function (n) {
+                    //     $('#tree').jstree(true).set_id(n.id,
+                    //         data.id);
+                    // });
 
-                    if (new_node) {
-                        ref.edit(new_node);
-                    }
+                    // TODO Need to put the new node into edit mode so the user can enter the title they want.
+                    // if (new_node) {
+                    //     ref.edit(new_node);
+                    // }
                     $('#statusbar').html(data.status_text);
                 })
                 .catch(error => console.error('There was an error with the Tree Add Fetch operation: ', error));
