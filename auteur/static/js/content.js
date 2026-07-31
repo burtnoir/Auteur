@@ -88,12 +88,16 @@ document.addEventListener("DOMContentLoaded", (event) => {
         window.treeAdd = function (project_id) {
 
             // First get the selected node so we know the parent.
-            let ref = projectTree.findKey(project_id);
+            let ref = projectTree.activeNode;
+
+            if (!ref) {
+                return false;
+            }
 
             // Now assemble the data to send to the server.
             const x = {
                 "pos": "last",
-                "parent": ref.id
+                "parent": ref.key
             };
 
             fetch(SCRIPT_ROOT + '/add_node/' + project_id, {
@@ -115,18 +119,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
                     // Now we can create the node because we will have all
                     // the information needed. Id will be passed back from the
                     // server.
+                    ref.setExpanded(true);
                     const new_node = ref.addChildren(data.children);
-                    // const new_node = ref.create_node(sel, {
-                    //     "text": data.text,
-                    //     "type": "file",
-                    //     "data": {
-                    //         "treeid": data.id,
-                    //         "displayorder": data.displayorder
-                    //     }
-                    // }, x.pos, function (n) {
-                    //     $('#tree').jstree(true).set_id(n.id,
-                    //         data.id);
-                    // });
 
                     // TODO Need to put the new node into edit mode so the user can enter the title they want.
                     // if (new_node) {
@@ -142,9 +136,9 @@ document.addEventListener("DOMContentLoaded", (event) => {
          * Request a delete of the node(s) and the associated text from the server.
          */
         window.treeDelete = function () {
-            const ref = $('#tree').jstree(true),
-                sel = ref.get_selected();
-            if (!sel.length) {
+            let ref = projectTree.activeNode;
+
+            if (!ref) {
                 return false;
             }
 
@@ -154,7 +148,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
                     "Content-Type": "application/json",
                     "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
                 },
-                body: JSON.stringify({"ids": sel}, null, '\t')
+                body: JSON.stringify({"id": ref.key}, null, '\t')
             })
                 .then(response => {
                     if (!response.ok) {
@@ -165,7 +159,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
                 })
                 .then(data => {
                     // Now the server is done we can delete the node(s).
-                    ref.delete_node(sel);
+                    ref.remove();
                     $('#statusbar').html(data.status_text);
                     return false;
                 })

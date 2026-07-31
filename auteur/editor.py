@@ -322,15 +322,12 @@ def create_node(project, parent=None, displayorder=1, title='New Section'):
 @bp.route('/delete_node', methods=['POST'])
 def delete_node():
     """
-    Delete the node and associated section text.
+    Delete the node and associated section text.  This will cascade to the descendants.
     """
-    nodes = request.get_json().get('ids')
-    for node_id in nodes:
-        section = Section.query.filter_by(structure_id=node_id).first()
-        db.session.delete(section)
-        structure = Structure.query.filter_by(id=node_id).first()
-        db.session.delete(structure)
-        db.session.commit()
+    node_id = request.get_json().get('id')
+    structure = Structure.query.filter_by(id=node_id).first()
+    db.session.delete(structure)
+    db.session.commit()
 
     return jsonify(status_text=gettext("Hoorah! Section was deleted."))
 

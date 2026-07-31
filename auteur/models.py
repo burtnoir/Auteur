@@ -45,6 +45,7 @@ class Structure(db.Model):
     displayorder: Mapped[int] = mapped_column(Integer)
     pub_date: Mapped[DateTime] = mapped_column(DateTime)
     children = relationship("Structure",
+                            cascade="all, delete-orphan",
                             backref=db.backref('parent', remote_side=[id]))
 
     project_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('project.id'))
