@@ -122,10 +122,16 @@ document.addEventListener("DOMContentLoaded", (event) => {
                     ref.setExpanded(true);
                     const new_node = ref.addChildren(data.children);
 
-                    // TODO Need to put the new node into edit mode so the user can enter the title they want.
-                    // if (new_node) {
-                    //     ref.edit(new_node);
-                    // }
+                    // Put the new node into edit mode so the user can enter the title they want.
+                    if (new_node) {
+
+                        // The addChildren()/setExpanded() calls above queue a throttled
+                        // viewport redraw that lands on the next animation frame and
+                        // rebuilds row markup — which wipes out an edit <input> created
+                        // before that redraw fires. Defer starting the edit until after
+                        // that redraw has run.
+                        requestAnimationFrame(() => requestAnimationFrame(() => new_node.startEditTitle()))
+                    }
                     $('#statusbar').html(data.status_text);
                 })
                 .catch(error => console.error('There was an error with the Tree Add Fetch operation: ', error));

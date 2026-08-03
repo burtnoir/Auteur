@@ -6,15 +6,13 @@
     What should the configuration include?  What would be good to be able to control?
     
     Small Stuff:
-    - Themes
-    - Display fonts
+     - Display fonts
     
     Big Stuff:
     - Templates
       - Project Type
       - Tree starting point
       - Starting tree nodes could have associated text templates
-    -
  -->
     {{ render_form(form, id="configform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.save_config')) }}
 {% endblock %}

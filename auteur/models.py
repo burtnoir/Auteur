@@ -146,9 +146,11 @@ class Configuration(db.Model):
     __tablename__ = 'configuration'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     theme: Mapped[str] = mapped_column(String(50))
+    #export_node_titles: Mapped[bool] = mapped_column(Boolean)
 
-    def __init__(self, theme):
+    def __init__(self, theme, export_node_titles=False):
         self.theme = theme
+     #   self.export_node_titles = export_node_titles
 
     def __repr__(self):
         return '<Configuration %r>' % self.theme
