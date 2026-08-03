@@ -44,4 +44,5 @@ class ProjectForm(FlaskForm):
 class ConfigurationForm(FlaskForm):
     id = HiddenField()
     theme = SelectField(lazy_gettext('Theme'), choices=[('light', lazy_gettext('Light (Default)')), ('dark', lazy_gettext('Dark'))])
+    export_node_titles = BooleanField(lazy_gettext(('Export Node Titles?')))
     submit = SubmitField(lazy_gettext('Save'))

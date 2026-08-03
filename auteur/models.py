@@ -7,8 +7,22 @@ Created on Apr 25, 2015
 """
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, ForeignKey, Boolean, DateTime
+from sqlalchemy import Integer, String, Text, ForeignKey, Boolean, DateTime, false
 from datetime import datetime, UTC
+
+"""
+ The following commands setup a database migration and allow the user to migrate their database instance.
+ The first one only needs to be run once to establish a base line to migrate from.  It also needs to mark it
+ with flask --app auteur:create_app db stamp head
+    flask --app auteur:create_app db init
+    flask --app auteur:create_app db stamp head
+    flask --app auteur:create_app db migrate -m "initial migration"
+    flask --app auteur:create_app db upgrade
+
+ When we make a change to the Models we need to run the second two commands.  One creates the migration script
+ and then the second one runs it.  If the migrate doesn't work we might need to update the script created in
+ the migrations folder.
+"""
 
 
 # CREATE DATABASE
@@ -141,16 +155,17 @@ class SectionCharacters(db.Model):
 class Configuration(db.Model):
     """
     A simple global preferences object.  Once we have users then we will have a user preference object that can override the global.
-    TODO Need a migration script - easy enough for this one but it will be good to have a mechanism for is going forward.  Do blueprints create their own databases?
     """
     __tablename__ = 'configuration'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     theme: Mapped[str] = mapped_column(String(50))
-    #export_node_titles: Mapped[bool] = mapped_column(Boolean)
+    # the server default lets the alembic migration work without needing to update the python script
+    # in the migrations directory.
+    export_node_titles: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
     def __init__(self, theme, export_node_titles=False):
         self.theme = theme
-     #   self.export_node_titles = export_node_titles
+        self.export_node_titles = export_node_titles
 
     def __repr__(self):
         return '<Configuration %r>' % self.theme

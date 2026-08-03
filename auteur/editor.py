@@ -460,6 +460,7 @@ def save_config():
             db.session.add(configuration)
         else:
             configuration.theme = form.theme.data
+            configuration.export_node_titles = form.export_node_titles.data
         db.session.commit()
         flash(gettext('Configuration Save was a Complete Success!'))
         return redirect(url_for('editor.show_config'))

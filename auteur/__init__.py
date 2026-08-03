@@ -5,7 +5,7 @@ from flask_babel import Babel
 from flask_bootstrap import Bootstrap5
 import os
 
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from .extensions import csrf
 
 
@@ -45,9 +45,20 @@ def create_app(test_config=None):
     babel = Babel(app, locale_selector=get_locale)
     Bootstrap5(app)
 
-    # This should make the database available to the blueprints
+    """
+     This should make the database available to the blueprints
+     The following commands setup a database migration and allow the user to migrate their database instance
+        flask --app auteur:create_app db init
+        flask --app auteur:create_app db migrate -m "initial migration"
+        flask --app auteur:create_app db upgrade
+        
+     When we make a change to the Models we need to run the second two commands.  One creates the migration script
+     and then the second one runs it.  If the migrate doesn't work we might need to update the script created in
+     the migrations folder.
+    """
     from .models import db
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     # Check whether the configured SQLite database file already exists.
     # If it doesn't, create it (along with its tables) so the app is ready
@@ -59,31 +70,8 @@ def create_app(test_config=None):
         db_path = db_uri[len(sqlite_prefix):]
         if not os.path.exists(db_path):
             with app.app_context():
-                db.create_all()
+                upgrade()
             click.echo('Database not found - created a new one at %s' % db_path)
-
-    @app.cli.command('init-db')
-    def init_db_command():
-        """
-            Create the database tables if they don't already exist.
-            This makes sure the SQLite file configured via SQLALCHEMY_DATABASE_URI
-            (see instance/config.py) always has the expected schema, without
-            touching any data that might already be there.
-            Run it with: flask --app auteur:create_app init-db
-        """
-        with app.app_context():
-            db.create_all()
-        click.echo('Initialized the database at %s' % app.config['SQLALCHEMY_DATABASE_URI'])
-
-    @app.cli.command('migrate-db')
-    def migrate_db_command():
-        """
-            Migrate the database tables
-            Run it with: flask --app auteur:create_app migrate-db
-         """
-        with app.app_context():
-            migrate = Migrate(app, db)
-        click.echo('Migrated the database at %s' % app.config['SQLALCHEMY_DATABASE_URI'])
 
     from . import editor
     app.register_blueprint(editor.bp)
