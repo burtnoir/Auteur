@@ -119,20 +119,24 @@ def build_export_sections(project_id):
     {'title', 'body_html', 'level'} dicts ready for the export template.
     """
     sections = []
+    config = Configuration.query.filter_by(id=1).first()
 
-    def add(structure, level):
+    def add(structure, level, export_node_titles):
         section = Section.query.filter_by(structure_id=structure.id).first()
-        sections.append({
-            'title': structure.title,
+        text_block = {
+            'title': structure.title if export_node_titles else '',
             'body_html': markdown.markdown(section.body) if section and section.body else '',
             'level': level,
-        })
+        }
+        # Only add a section if there is some text there.
+        if text_block['title'] != '' or text_block['body_html'] != '':
+            sections.append(text_block)
         for child in Structure.query.filter_by(parent_id=structure.id).order_by(Structure.displayorder).all():
-            add(child, level + 1)
+            add(child, level + 1, config.export_node_titles)
 
     root = Structure.query.filter_by(project_id=project_id, parent_id=None).first()
     if root:
-        add(root, 0)
+        add(root, 0, config.export_node_titles)
 
     return sections
 
@@ -142,7 +146,6 @@ def create_tree_item_children(children):
         tree_item_children.append(
             {"id": child.id, "key": child.id, "title": child.title, "type": "folder", "expanded": False, "children": create_tree_item_children(child.children)})
     return tree_item_children
-
 
 @bp.route('/get_project_tree', methods=['GET'])
 def get_project_tree():
@@ -156,25 +159,6 @@ def get_project_tree():
         "chapter": {"icon": "fa-solid fa-folder", "classes": "bold-style"}
     }, "children": [{"id": structure.id, "key": structure.id, "title": structure.title, "type": "book", "expanded": True,
                      "children": create_tree_item_children(structure.children)}]}
-
-    """
-    The existing code to turn the structure data into a jsTree payload looks like this.  I'd like to change this into 
-    a python approach to turn the data into Wunderbaum data and return it as JSON.  That keeps the data wrangling server
-    side and lets the template and JS deal with presentation and user interaction.
-      const treeData = [
-      {% for item in structure %} {
-          "id": {{ item.id }},
-          "parent": {% if item.parent_id %} "{{ item.parent_id }}" {% else %} "#" {% endif %},
-          "text": "{{ item.title }}",
-          "data": {"displayorder": {{ item.displayorder }}},
-          "state": {
-              "opened": true,
-              "selected": {% if item.parent_id %} false {% else %} true {% endif %}
-          }
-      },
-      {% endfor %}
-  ];
-    """
 
     return jsonify(tree_data)
 
