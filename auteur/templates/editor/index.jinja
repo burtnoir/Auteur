@@ -1,12 +1,6 @@
 {% extends "editor/layout.jinja" %}
 {% from "bootstrap5/form.html" import render_form %}
 
-{% block navbar_buttons_after %}
-{#<li class="nav-item">#}
-{#    <a id="config" href="{{ url_for('editor.show_config') }}" role="button" class="nav-link" title="{{ _('Configuration') }}"><i class="fa-solid fa-gear"></i></a>#}
-{#</li>#}
-{% endblock %}
-
 {% block body %}
     <div class="row">
         <div class="col">
@@ -62,14 +56,27 @@
                     <a class="list-group-item list-group-item-action" data-is_template={{ project.is_template }} href={{ url_for('editor.show_content', project_id=project.id) }}>
                         <div class="d-flex w-100 justify-content-between">
                             <h4 class="mb-1">{{ project.name }}</h4>
-                            <button type="button" class="btn btn-danger close deleteProject" data-project_id="{{ project.id }}" data-is_deleted={{ project.is_deleted }} aria-label="{% if project.is_deleted %}{{ _('Restore') }}{% else %}{{ _('Delete') }}{% endif %}">
-                                {% if project.is_deleted %}<i class="fa-solid fa-rotate-left"></i>{% else %}<i class="fa-regular fa-circle-xmark"></i>{% endif %}
-                            </button>
+                           <div class="d-flex align-items-center gap-2">
+                                <div class="btn-group" role="group" aria-label="Export Projects">
+                                  <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                      {{ _('Export') }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                      <li><button id="export" class="dropdown-item export" data-project_id="{{ project.id }}" href="{{ url_for('editor.export_project', project_id=project.id) }}">{{ _('HTML') }}</button></li>
+                                      <li><button id="export_pdf" class="dropdown-item export_pdf" data-project_id="{{ project.id }}" href="{{ url_for('editor.export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</button></li>
+                                    </ul>
+                                  </div>
+                                </div>
+                                <button type="button" class="btn btn-danger close deleteProject" data-project_id="{{ project.id }}" data-is_deleted={{ project.is_deleted }} aria-label="{% if project.is_deleted %}{{ _('Restore') }}{% else %}{{ _('Delete') }}{% endif %}">
+                                    {% if project.is_deleted %}<i class="fa-solid fa-rotate-left"></i>{% else %}<i class="fa-regular fa-circle-xmark"></i>{% endif %}
+                                </button>
+                           </div>
                         </div>
                         <p class="mb-1">{{ project.short_description }}</p>
                     </a>
                     {% else %}
-                    <em>{% if showing_templates %}{{ _('No templates here so far') }}{% else %}{{ _('No projects here so far') }}{% endif %}</em>
+                        <em>{% if showing_templates %}{{ _('No templates here so far') }}{% else %}{{ _('No projects here so far') }}{% endif %}</em>
                     {% endfor %}
                 </div>
 

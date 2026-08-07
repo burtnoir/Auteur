@@ -407,7 +407,7 @@ def export_project(project_id):
     html = render_template('editor/export.jinja', project=project,
                            sections=build_export_sections(project_id))
     headers = Headers()
-    headers.add('Content-Disposition', 'attachment', filename=(project.name + '.html'))
+    headers.add('Content-Disposition', 'inline', filename=(project.name + '.html'))
     return Response(html, headers=headers)
 
 

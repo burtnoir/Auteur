@@ -1,5 +1,4 @@
-$(document).ready(
-    function () {
+document.addEventListener("DOMContentLoaded", (event) => {
 
         const deleteProjectHelper = function (project_id, endpoint, parent) {
 
@@ -23,7 +22,6 @@ $(document).ready(
                     }
                 })
                 .catch(error => console.error('There was an error with the Delete Project Fetch operation: ', error));
-
         };
 
         /**
@@ -48,6 +46,17 @@ $(document).ready(
             }
 
             // Need to stop the bubbling or it will do the delete and then go to the project.
+            return false;
+        });
+
+        // Attach the export events
+        $('.export').on('click', function (event) {
+            window.open(SCRIPT_ROOT + '/export_project/' + this.dataset.project_id, '_blank');
+            return false;
+        });
+
+        $('.export_pdf').on('click', function (event) {
+            window.open(SCRIPT_ROOT + '/export_project_pdf/' + this.dataset.project_id, '_blank');
             return false;
         });
     });
