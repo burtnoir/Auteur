@@ -2,15 +2,20 @@
 {% from "bootstrap5/form.html" import render_form %}
 
 {% block navbar_buttons_after %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" type="button" id="exportMenu" data-bs-toggle="dropdown" aria-expanded="false">
-      {{ _('Export') }}
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="exportMenu">
-      <li><a id="export" class="dropdown-item" href="{{ url_for('editor.export_project', project_id=project.id) }}">{{ _('HTML') }}</a></li>
-      <li><a id="export_pdf" class="dropdown-item" href="{{ url_for('editor.export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</a></li>
-    </ul>
-  </li>
+    <button type="button" class="btn btn-outline-info me-2" data-project_id="{{ project.id }}" aria-label="Checkpoint">
+        {{ _('Checkpoint') }}
+    </button>
+    <div class="btn-group" role="group" aria-label="Export Projects">
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          {{ _('Export') }}
+        </button>
+        <ul class="dropdown-menu">
+          <li><button id="export" class="dropdown-item export" data-project_id="{{ project.id }}" href="{{ url_for('editor.export_project', project_id=project.id) }}">{{ _('HTML') }}</button></li>
+          <li><button id="export_pdf" class="dropdown-item export_pdf" data-project_id="{{ project.id }}" href="{{ url_for('editor.export_project_pdf', project_id=project.id) }}">{{ _('PDF') }}</button></li>
+        </ul>
+      </div>
+    </div>
 {% endblock %}
 
 {% block body %}

@@ -9,6 +9,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Text, ForeignKey, Boolean, DateTime, false
 from datetime import datetime, UTC
+from typing import List
+from flask_login import UserMixin
 
 """
  The following commands setup a database migration and allow the user to migrate their database instance.
@@ -22,6 +24,10 @@ from datetime import datetime, UTC
  When we make a change to the Models we need to run the second two commands.  One creates the migration script
  and then the second one runs it.  If the migrate doesn't work we might need to update the script created in
  the migrations folder.
+ 
+ SQLite's batch-alter approach means any interrupted migration on this database can leave _alembic_tmp_* debris behind 
+ again in the future — if a migration ever fails partway, the same drill applies (check alembic_version, check for 
+ stray temp tables, check actual column state before rerunning) and drop / revert them.
 """
 
 
@@ -33,6 +39,22 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 
 
+# Create a User table for all your registered users.
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True)
+    password: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(1000))
+    projects: Mapped[List["Project"]] = relationship()
+    checkpoints: Mapped[List["Checkpoint"]] = relationship()
+
+    def get_id(self):
+        # This is really important - without it we can log in but
+        # the login stuff can't check to see if we are logged in
+        # and so the decorators and the current_user don't work.
+        return self.email
+
 class Project(db.Model):
     __tablename__ = 'project'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -40,6 +62,8 @@ class Project(db.Model):
     description: Mapped[str] = mapped_column(Text)
     is_template: Mapped[bool] = mapped_column(Boolean, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["User"] = relationship(back_populates="projects")
 
     @property
     def short_description(self):
@@ -92,6 +116,8 @@ class Section(db.Model):
 
     structure_id: Mapped[int] = mapped_column(Integer, ForeignKey('structure.id'))
     structure: Mapped["Structure"] = relationship(back_populates="section")
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
 
     def __init__(self, body, structure, pub_date=None):
         self.body = body
@@ -111,6 +137,8 @@ class SectionSynopsis(db.Model):
 
     structure_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('structure.id'))
     structure: Mapped["Structure"] = relationship(back_populates="sectionsynopsis")
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
 
     def __init__(self, body, structure):
         self.body = body
@@ -127,6 +155,8 @@ class SectionNotes(db.Model):
 
     structure_id: Mapped[int] = mapped_column(Integer, ForeignKey('structure.id'))
     structure: Mapped["Structure"] = relationship(back_populates="sectionnotes")
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
 
     def __init__(self, body, structure):
         self.body = body
@@ -143,6 +173,8 @@ class SectionCharacters(db.Model):
 
     structure_id: Mapped[int] = mapped_column(Integer, ForeignKey('structure.id'))
     structure: Mapped["Structure"] = relationship(back_populates="sectioncharacters")
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
 
     def __init__(self, body, structure):
         self.body = body
@@ -150,6 +182,48 @@ class SectionCharacters(db.Model):
 
     def __repr__(self):
         return '<Section Characters %r>' % self.body
+
+
+class Checkpoint(db.Model):
+    """
+    A user-triggered save point for a project. One row per checkpoint;
+    the actual content lives in CheckpointSection rows linked to it.
+    """
+    __tablename__ = 'checkpoint'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey('project.id'))
+    project: Mapped["Project"] = relationship(
+        backref=db.backref('checkpoints', order_by='Checkpoint.created_date.desc()'))
+
+    label: Mapped[str] = mapped_column(String(120))  # e.g. "Before Act 2 rewrite"
+    created_date: Mapped[DateTime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    created_by_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False)
+    user: Mapped["User"] = relationship(back_populates="checkpoints")
+
+    def __repr__(self):
+        return '<Checkpoint %r (%r)>' % (self.label, self.project_id)
+
+
+class CheckpointSection(db.Model):
+    """
+    Snapshot of one structure node's four text bodies at checkpoint time.
+    Denormalized (one row holds all four bodies) since they're always
+    checkpointed together and it keeps restore simple.
+    """
+    __tablename__ = 'checkpoint_section'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    checkpoint_id: Mapped[int] = mapped_column(Integer, ForeignKey('checkpoint.id'))
+    checkpoint: Mapped["Checkpoint"] = relationship(backref=db.backref('sections', cascade='all, delete-orphan'))
+
+    structure_id: Mapped[int] = mapped_column(Integer, ForeignKey('structure.id'))
+    title: Mapped[str] = mapped_column(String(80))  # snapshot the title too, in case it's renamed later
+    section_body: Mapped[str] = mapped_column(Text)
+    synopsis_body: Mapped[str] = mapped_column(Text)
+    notes_body: Mapped[str] = mapped_column(Text)
+    characters_body: Mapped[str] = mapped_column(Text)
+
+    def __repr__(self):
+        return '<CheckpointSection structure_id=%r>' % self.structure_id
 
 
 class Configuration(db.Model):

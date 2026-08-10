@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 import click
-from flask import Flask, request
+from flask import Flask, request, redirect, render_template, flash, url_for
 from flask_babel import Babel
 from flask_bootstrap import Bootstrap5
+from flask_login import login_user, LoginManager, current_user, logout_user, login_required
 import os
 
 from flask_migrate import Migrate, upgrade
 from .extensions import csrf
+from .forms import LoginUser, RegisterUser
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # create our little application :)
@@ -45,6 +48,10 @@ def create_app(test_config=None):
     babel = Babel(app, locale_selector=get_locale)
     Bootstrap5(app)
 
+    # Configure Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+
     """
      This should make the database available to the blueprints
      The following commands setup a database migration and allow the user to migrate their database instance
@@ -72,6 +79,67 @@ def create_app(test_config=None):
             with app.app_context():
                 upgrade()
             click.echo('Database not found - created a new one at %s' % db_path)
+
+    def admin_only(function):
+        # Decorator function to make sure that anyone calling an endpoint decorated by this
+        # is logged in as the admin user - currently defined by an id of 1 - bit simple but it
+        # shows a way to do it.
+        @wraps(function)
+        def decorated_function(*args, **kwargs):
+            if current_user.id == 1:
+                return function(*args, **kwargs)
+            else:
+                abort(403)
+
+        return decorated_function
+
+    @login_manager.user_loader
+    def load_user(user_email):
+        return db.session.scalars(db.select(User).where(User.email == user_email)).first()
+
+    # Register a user and use Werkzeug to hash the user's password.
+    @app.route('/register', methods=['POST', 'GET'])
+    def register():
+        form = RegisterUser()
+        if form.validate_on_submit():
+            if load_user(form.email.data):
+                flash('This email address is already registered, please login instead of registering.', 'error')
+                return redirect(url_for('login'))
+            user = User()
+            user.name = form.name.data
+            user.email = form.email.data
+            user.password = generate_password_hash(form.password.data, method='pbkdf2:sha256', salt_length=8)
+            db.session.add(user)
+            db.session.commit()
+
+            # Log the user in via the login manager
+            login_user(user)
+            return redirect(url_for('get_all_posts'))
+        return render_template("register.html", form=form)
+
+    # Retrieve a user from the database based on their email.
+    @app.route('/login', methods=['POST', 'GET'])
+    def login():
+        form = LoginUser()
+        if form.validate_on_submit():
+            email = form.email.data
+            password = form.password.data
+            user = load_user(email)
+            # Check everything is OK before passing the user on to the secrets page.
+            if user and check_password_hash(user.password, password):
+                login_user(user)
+                return redirect(url_for('get_all_posts'))
+            # If this is a POST request but there's a problem with the login credentials
+            # show a message and offer the login page again.
+            flash('The email address and password combination is not recognised.', 'error')
+            return redirect(url_for('login'))
+        return render_template("login.html", form=form)
+
+    @app.route('/logout')
+    @login_required
+    def logout():
+        logout_user()
+        return redirect(url_for('editor/index'))
 
     from . import editor
     app.register_blueprint(editor.bp)

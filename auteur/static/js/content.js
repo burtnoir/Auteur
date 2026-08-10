@@ -376,4 +376,15 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
         wireRailToggle('leftsidebar', 'toggleLeft', '<i class="fa-solid fa-chevron-left"></i>', '<i class="fa-solid fa-chevron-right"></i>');
         wireRailToggle('rightsidebar', 'toggleRight', '<i class="fa-solid fa-chevron-right"></i>', '<i class="fa-solid fa-chevron-left"></i>');
+
+        // Attach the export events
+        $('.export').on('click', function (event) {
+            window.open(SCRIPT_ROOT + '/export_project/' + this.dataset.project_id, '_blank');
+            return false;
+        });
+
+        $('.export_pdf').on('click', function (event) {
+            window.open(SCRIPT_ROOT + '/export_project_pdf/' + this.dataset.project_id, '_blank');
+            return false;
+        });
     });

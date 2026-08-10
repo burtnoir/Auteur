@@ -4,11 +4,31 @@ Created on May 30, 2015
 @author: sbrooks
 """
 from flask_wtf import FlaskForm
-from wtforms import StringField, BooleanField, SelectField, TextAreaField, HiddenField, SubmitField
+from wtforms import StringField, BooleanField, SelectField, TextAreaField, HiddenField, SubmitField, EmailField, \
+    PasswordField
 from auteur.models import Project
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import lazy_gettext
 from auteur.models import db
+
+
+class RegisterUser(FlaskForm):
+    """
+    WTFForm to register new users
+    """
+    name = StringField("Name", validators=[DataRequired()])
+    email = EmailField("Email", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Register")
+
+
+class LoginUser(FlaskForm):
+    """
+    A LoginForm to allow existing users to login
+    """
+    email = EmailField("Email", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Log In")
 
 
 class ProjectForm(FlaskForm):

@@ -6,11 +6,12 @@ from flask.json import jsonify
 from flask_babel import gettext
 from flask_weasyprint import HTML, render_pdf
 from flask_wtf.csrf import CSRFError
+from sqlalchemy.orm.exc import StaleDataError
 from werkzeug.datastructures import Headers
 
 from auteur.forms import ProjectForm, ConfigurationForm
 from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
-    Configuration
+    Configuration, CheckpointSection, Checkpoint
 
 bp = Blueprint('editor', __name__)
 
@@ -336,7 +337,10 @@ def update_node():
 def update_section():
     section = db.get_or_404(Section, request.form['section_id'])
     section.body = request.form['section_text']
-    db.session.commit()
+    conflict = commit_with_conflict_check(
+        gettext("Someone else saved changes to this section. Refresh to see the latest version."))
+    if conflict:
+        return conflict
 
     return jsonify(status=True,
                    status_text=gettext("Section save was a Complete Success!"))
@@ -350,7 +354,10 @@ def update_synopsis():
         return jsonify(status=False,
                        status_text=gettext("Synopsis text is missing - no update was done."))
     synopsis.body = synopsis_text
-    db.session.commit()
+    conflict = commit_with_conflict_check(
+        gettext("Someone else saved changes to these synopsis notes. Refresh to see the latest version."))
+    if conflict:
+        return conflict
     return jsonify(status=True,
                    status_text=gettext("Hoorah! Synopsis was updated."))
 
@@ -363,7 +370,10 @@ def update_notes():
         return jsonify(status=False,
                        status_text=gettext("Notes text is missing - no update was done."))
     notes.body = notes_text
-    db.session.commit()
+    conflict = commit_with_conflict_check(
+        gettext("Someone else saved changes to these notes. Refresh to see the latest version."))
+    if conflict:
+        return conflict
     return jsonify(status=True,
                    status_text=gettext("Hoorah! Notes was updated."))
 
@@ -376,9 +386,27 @@ def update_characters():
         return jsonify(status=False,
                        status_text=gettext("Characters text is missing - no update was done."))
     characters.body = characters_text
-    db.session.commit()
+    conflict = commit_with_conflict_check(
+        gettext("Someone else saved changes to these character notes. Refresh to see the latest version."))
+    if conflict:
+        return conflict
     return jsonify(status=True,
                    status_text=gettext("Hoorah! Characters was updated."))
+
+
+def commit_with_conflict_check(conflict_message):
+    """
+    Commit the session, translating a StaleDataError into a friendly
+    jsonify response instead of letting it propagate as a 500.
+    Returns None on success, or a Flask response to return immediately
+    if there was a conflict.
+    """
+    try:
+        db.session.commit()
+        return None
+    except StaleDataError:
+        db.session.rollback()
+        return jsonify(status=False, status_text=conflict_message)
 
 
 @bp.route('/update_project/<int:project_id>', methods=['POST'])
@@ -434,6 +462,10 @@ def show_config(config_id):
 
 @bp.route('/save_config', methods=['POST'])
 def save_config():
+    """
+    Save the configuration
+    :return:
+    """
     session.pop('project_id', None)
     form = ConfigurationForm(request.form)
 
@@ -451,6 +483,76 @@ def save_config():
 
     configuration = Configuration.query.filter_by(id=form.id.data).first()
     return render_template('editor/config.jinja', config=configuration, form=form)
+
+
+@bp.route('/create_checkpoint/<int:project_id>', methods=['POST'])
+def create_checkpoint(project_id):
+    """
+    Create a checkpoint for a project
+    :param project_id: Unique identifier for the project
+    :return:
+    """
+    label = request.form.get('label') or gettext('Checkpoint')
+    checkpoint = create_checkpoint_internal(label, project_id)
+    return jsonify(status=True, checkpoint_id=checkpoint.id,
+                   status_text=gettext("Checkpoint '%(label)s' created.", label=label))
+
+
+def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
+    """
+    Create a checkpoint for a project
+    :param label: The user defined name of the project checkpoint
+    :param project_id: The unique identifier for the project
+    :return: Checkpoint
+    """
+    checkpoint = Checkpoint(project_id=project_id, label=label)
+    db.session.add(checkpoint)
+
+    structures = Structure.query.filter_by(project_id=project_id).all()
+    for structure in structures:
+        db.session.add(CheckpointSection(
+            checkpoint=checkpoint,
+            structure_id=structure.id,
+            title=structure.title,
+            section_body=structure.section.body if structure.section else '',
+            synopsis_body=structure.sectionsynopsis.body if structure.sectionsynopsis else '',
+            notes_body=structure.sectionnotes.body if structure.sectionnotes else '',
+            characters_body=structure.sectioncharacters.body if structure.sectioncharacters else '',
+        ))
+
+    db.session.commit()
+    return checkpoint
+
+
+@bp.route('/restore_checkpoint/<int:checkpoint_id>', methods=['POST'])
+def restore_checkpoint(checkpoint_id):
+    """
+    Restore a checkpoint of a project
+    :param checkpoint_id: Unique identifier for the checkpoint
+    :return:
+    """
+    checkpoint = db.get_or_404(Checkpoint, checkpoint_id)
+
+    # Safety net: snapshot current state before overwriting it.
+    create_checkpoint_internal(checkpoint.project_id, label=gettext('Auto-save before restore'))
+
+    for cs in checkpoint.sections:
+        structure = Structure.query.filter_by(id=cs.structure_id).first()
+        if structure is None:
+            continue  # TODO node was deleted since this checkpoint was made - allow for this by recreating the node
+        structure.title = cs.title
+        if structure.section:
+            structure.section.body = cs.section_body
+        if structure.sectionsynopsis:
+            structure.sectionsynopsis.body = cs.synopsis_body
+        if structure.sectionnotes:
+            structure.sectionnotes.body = cs.notes_body
+        if structure.sectioncharacters:
+            structure.sectioncharacters.body = cs.characters_body
+
+    db.session.commit()
+    return jsonify(status=True, status_text=gettext("Restored the checkpoint: '%(label)s'.", label=checkpoint.label))
+
 
 @bp.app_errorhandler(CSRFError)
 def handle_csrf_error(error):
