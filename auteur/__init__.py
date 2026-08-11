@@ -11,6 +11,8 @@ from .extensions import csrf
 from .forms import LoginUser, RegisterUser
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from .models import Configuration, User
+
 
 # create our little application :)
 def create_app(test_config=None):
@@ -114,8 +116,9 @@ def create_app(test_config=None):
 
             # Log the user in via the login manager
             login_user(user)
-            return redirect(url_for('get_all_posts'))
-        return render_template("register.html", form=form)
+            return redirect(url_for('editor.get_project_list'))
+        config = Configuration.query.filter_by(id=1).first()
+        return render_template("register.jinja", form=form, config=config)
 
     # Retrieve a user from the database based on their email.
     @app.route('/login', methods=['POST', 'GET'])
@@ -128,18 +131,19 @@ def create_app(test_config=None):
             # Check everything is OK before passing the user on to the secrets page.
             if user and check_password_hash(user.password, password):
                 login_user(user)
-                return redirect(url_for('get_all_posts'))
+                return redirect(url_for('editor.get_project_list'))
             # If this is a POST request but there's a problem with the login credentials
             # show a message and offer the login page again.
             flash('The email address and password combination is not recognised.', 'error')
             return redirect(url_for('login'))
-        return render_template("login.html", form=form)
+        config = Configuration.query.filter_by(id=1).first()
+        return render_template("login.jinja", form=form, config=config)
 
     @app.route('/logout')
     @login_required
     def logout():
         logout_user()
-        return redirect(url_for('editor/index'))
+        return redirect(url_for('editor.get_project_list'))
 
     from . import editor
     app.register_blueprint(editor.bp)
