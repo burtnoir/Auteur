@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from functools import wraps
+
 import click
-from flask import Flask, request, redirect, render_template, flash, url_for
+from flask import Flask, request, redirect, render_template, flash, url_for, abort
 from flask_babel import Babel
 from flask_bootstrap import Bootstrap5
 from flask_login import login_user, LoginManager, current_user, logout_user, login_required
@@ -99,6 +101,12 @@ def create_app(test_config=None):
     def load_user(user_email):
         return db.session.scalars(db.select(User).where(User.email == user_email)).first()
 
+    @app.route('/')
+    def home():
+        config = Configuration.query.filter_by(id=1).first()
+        return render_template("index.jinja", config=config)
+
+
     # Register a user and use Werkzeug to hash the user's password.
     @app.route('/register', methods=['POST', 'GET'])
     def register():
@@ -143,7 +151,7 @@ def create_app(test_config=None):
     @login_required
     def logout():
         logout_user()
-        return redirect(url_for('editor.get_project_list'))
+        return redirect(url_for('home'))
 
     from . import editor
     app.register_blueprint(editor.bp)

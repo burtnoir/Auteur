@@ -1,9 +1,11 @@
 import markdown
 from flask import (
-    Blueprint, flash, redirect, render_template, request, url_for, Response, session, stream_with_context
+    Blueprint, flash, redirect, render_template, request, url_for, Response, session, current_app,
+    abort
 )
 from flask.json import jsonify
 from flask_babel import gettext
+from flask_login import current_user
 from flask_weasyprint import HTML, render_pdf
 from flask_wtf.csrf import CSRFError
 from sqlalchemy.orm.exc import StaleDataError
@@ -16,22 +18,69 @@ from auteur.models import db, Project, Structure, Section, SectionSynopsis, Sect
 bp = Blueprint('editor', __name__)
 
 
+@bp.before_request
+def require_login():
+    """
+    Every route in this blueprint deals with a specific user's projects,
+    so nothing here should be reachable while logged out.
+    """
+    if not current_user.is_authenticated:
+        return current_app.login_manager.unauthorized()
+
+
+# ---------------------------------------------------------------------------
+# Ownership helpers
+#
+# Project has a user_id directly. Structure, Section, SectionSynopsis,
+# SectionNotes and SectionCharacters don't - they only get to a user by
+# walking back up to Structure.project.user_id. These helpers centralise
+# that check so every route uses the same rule, and 404 (rather than 403)
+# on a mismatch so we don't confirm to a user that another user's project
+# id/structure id even exists.
+# ---------------------------------------------------------------------------
+
+def get_owned_project_or_404(project_id):
+    return Project.query.filter_by(id=project_id, user_id=current_user.id).first_or_404()
+
+
+def get_owned_structure_or_404(structure_id):
+    return (Structure.query
+            .join(Project, Structure.project_id == Project.id)
+            .filter(Structure.id == structure_id, Project.user_id == current_user.id)
+            .first_or_404())
+
+
+def check_section_owner_or_404(section):
+    """
+    Section/SectionSynopsis/SectionNotes/SectionCharacters all share this
+    shape: they have .structure, which has .project, which has .user_id.
+    Use this after a db.get_or_404 lookup by primary key, since that lookup
+    on its own doesn't check ownership.
+    """
+    if section is None or section.structure.project.user_id != current_user.id:
+        abort(404)
+    return section
+
+
 @bp.route('/')
 @bp.route('/get_project_list', methods=['GET'])
 def get_project_list():
-    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == False).all()
+    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == False,
+                                    Project.user_id == current_user.id).all()
     return get_project_list_helper(projects)
 
 
 @bp.route('/get_template_list', methods=['GET'])
 def get_template_list():
-    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == True).all()
+    projects = Project.query.filter(Project.is_deleted == False, Project.is_template == True,
+                                    Project.user_id == current_user.id).all()
     return get_project_list_helper(projects)
 
 
 @bp.route('/get_deleted_template_list', methods=['GET'])
 def get_deleted_template_list():
-    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == True).all()
+    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == True,
+                                    Project.user_id == current_user.id).all()
     return get_project_list_helper(projects)
 
 
@@ -40,7 +89,8 @@ def get_deleted_project_list():
     """
     Get a list of deleted projects for display.
     """
-    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == False).all()
+    projects = Project.query.filter(Project.is_deleted == True, Project.is_template == False,
+                                    Project.user_id == current_user.id).all()
     return get_project_list_helper(projects)
 
 
@@ -48,9 +98,13 @@ def get_project_list_helper(projects):
     session.pop('project_id', None)
     config = Configuration.query.filter_by(id=1).first()
     form = ProjectForm(request.form)
-    form.template.choices = [(t.id, t.name) for t in Project.query.filter(Project.is_template == True, Project.is_deleted == False).order_by('name').all()]
+    # Templates are per-user too, so only offer the current user's own templates
+    # as choices when starting a new project.
+    form.template.choices = [(t.id, t.name) for t in Project.query.filter(
+        Project.is_template == True, Project.is_deleted == False,
+        Project.user_id == current_user.id).order_by('name').all()]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
-    return render_template('editor/index.jinja',
+    return render_template('editor/project_list.jinja',
                            projects=projects,
                            config=config,
                            form=form)
@@ -61,7 +115,7 @@ def get_project_list_helper(projects):
 def show_content(project_id, structure_id):
     config = Configuration.query.filter_by(id=1).first()
     # show the project with the given id, the id is an integer
-    project = Project.query.filter_by(id=project_id).first()
+    project = get_owned_project_or_404(project_id)
     form = ProjectForm(obj=project)
     del form.template
     del form.submit
@@ -71,6 +125,10 @@ def show_content(project_id, structure_id):
     if structure_id is None:
         structure = Structure.query.filter_by(project_id=project.id)
         structure_id = structure[0].id
+    else:
+        # structure_id came from the URL - make sure it actually belongs to
+        # this project/user rather than trusting it blindly.
+        get_owned_structure_or_404(structure_id)
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
@@ -154,6 +212,9 @@ def get_project_tree():
     Get the project tree.
     """
     project_id = request.args.get('project_id', 0, type=int)
+    # Confirms this project belongs to the current user before we hand back
+    # any of its tree structure.
+    get_owned_project_or_404(project_id)
     structure = Structure.query.filter_by(project_id=project_id).first()
     tree_data = {"types": {
         "book": {"icon": "fa-solid fa-book"},
@@ -170,6 +231,9 @@ def get_section():
     Get the contents of a section for display.
     """
     structure_id = request.args.get('structure_id', 0, type=int)
+    # structure_id is client-supplied - verify it's owned by this user before
+    # returning any of its text.
+    get_owned_structure_or_404(structure_id)
     section = Section.query.filter_by(structure_id=structure_id).first()
     synopsis = SectionSynopsis.query.filter_by(structure_id=structure_id).first()
     notes = SectionNotes.query.filter_by(structure_id=structure_id).first()
@@ -192,14 +256,21 @@ def add_project():
     """
     session.pop('project_id', None)
     form = ProjectForm(request.form)
-    form.template.choices = [(t.id, t.name) for t in Project.query.order_by('name').filter(Project.is_template)]
+    # Only the current user's own templates should be offered/usable as a
+    # source to copy from.
+    form.template.choices = [(t.id, t.name) for t in Project.query.filter(
+        Project.is_template == True, Project.user_id == current_user.id).order_by('name').all()]
     form.template.choices.insert(0, (0, gettext('-- Choose a Template --')))
     if form.validate():
-        project = Project(name=form.name.data, description=form.description.data, is_template=form.is_template.data)
+        project = Project(name=form.name.data, description=form.description.data,
+                          is_template=form.is_template.data, user=current_user)
         db.session.add(project)
 
         if form.template.data != 0:
-            copy_from_template(project, form.template.data)
+            # get_owned_project_or_404 makes sure a user can't copy from a
+            # template id that isn't theirs, just by editing the posted form.
+            template_project = get_owned_project_or_404(form.template.data)
+            copy_from_template(project, template_project.id)
         else:
             create_node(project=project, title=form.name.data)
 
@@ -210,7 +281,7 @@ def add_project():
         return redirect(url_for('editor.show_content', project_id=project.id, structure_id=None))
 
     projects = Project.query.all()
-    return render_template('editor/index.jinja',
+    return render_template('editor/project_list.jinja',
                            projects=projects,
                            form=form)
 
@@ -250,7 +321,7 @@ def delete_project(project_id):
     """"
     Delete the project.
     """
-    project = Project.query.filter(Project.id == project_id).first()
+    project = get_owned_project_or_404(project_id)
     project.is_deleted = True
     db.session.commit()
 
@@ -262,7 +333,7 @@ def undelete_project(project_id):
     """
     Undelete the project.
     """
-    project = Project.query.filter(Project.id == project_id).first()
+    project = get_owned_project_or_404(project_id)
     project.is_deleted = False
     db.session.commit()
 
@@ -310,7 +381,7 @@ def delete_node():
     Delete the node and associated section text.  This will cascade to the descendants.
     """
     node_id = request.get_json().get('id')
-    structure = Structure.query.filter_by(id=node_id).first()
+    structure = get_owned_structure_or_404(node_id)
     db.session.delete(structure)
     db.session.commit()
 
@@ -326,7 +397,9 @@ def update_node():
     node_id = node.get('id')
     node_text = node.get('text')
 
-    structure = Structure.query.filter_by(id=node_id).first()
+    # Previously this looked the node up with no ownership check at all,
+    # so any logged-in user could rename any node by id.
+    structure = get_owned_structure_or_404(node_id)
     structure.title = node_text
     db.session.commit()
 
@@ -336,6 +409,7 @@ def update_node():
 @bp.route('/update_section', methods=['POST'])
 def update_section():
     section = db.get_or_404(Section, request.form['section_id'])
+    check_section_owner_or_404(section)
     section.body = request.form['section_text']
     conflict = commit_with_conflict_check(
         gettext("Someone else saved changes to this section. Refresh to see the latest version."))
@@ -349,6 +423,7 @@ def update_section():
 @bp.route('/update_synopsis', methods=['POST'])
 def update_synopsis():
     synopsis = SectionSynopsis.query.filter(SectionSynopsis.id == request.form['synopsis_id']).first()
+    check_section_owner_or_404(synopsis)
     synopsis_text = request.form.get('synopsis_text')
     if synopsis_text is None:
         return jsonify(status=False,
@@ -365,6 +440,7 @@ def update_synopsis():
 @bp.route('/update_notes', methods=['POST'])
 def update_notes():
     notes = SectionNotes.query.filter(SectionNotes.id == request.form['notes_id']).first()
+    check_section_owner_or_404(notes)
     notes_text = request.form.get('notes_text')
     if notes_text is None:
         return jsonify(status=False,
@@ -381,6 +457,7 @@ def update_notes():
 @bp.route('/update_characters', methods=['POST'])
 def update_characters():
     characters = SectionCharacters.query.filter(SectionCharacters.id == request.form['character_id']).first()
+    check_section_owner_or_404(characters)
     characters_text = request.form.get('character_text')
     if characters_text is None:
         return jsonify(status=False,
@@ -411,11 +488,12 @@ def commit_with_conflict_check(conflict_message):
 
 @bp.route('/update_project/<int:project_id>', methods=['POST'])
 def update_project(project_id):
+    # Confirms ownership before any form processing touches the project.
+    project = get_owned_project_or_404(project_id)
     form = ProjectForm()
     del form.template
     form.id.data = str(project_id)
     if form.validate_on_submit():
-        project = Project.query.filter(Project.id == project_id).first()
         project.name = form.name.data
         project.description = form.description.data
         project.is_template = form.is_template.data
@@ -431,7 +509,7 @@ def update_project(project_id):
 
 @bp.route('/export_project/<int:project_id>', methods=['GET'])
 def export_project(project_id):
-    project = Project.query.filter(Project.id == project_id).first()
+    project = get_owned_project_or_404(project_id)
     html = render_template('editor/export.jinja', project=project,
                            sections=build_export_sections(project_id))
     headers = Headers()
@@ -441,7 +519,7 @@ def export_project(project_id):
 
 @bp.route('/export_project_pdf/<int:project_id>', methods=['GET'])
 def export_project_pdf(project_id):
-    project = Project.query.filter(Project.id == project_id).first()
+    project = get_owned_project_or_404(project_id)
     html = render_template('editor/export.jinja', project=project,
                            sections=build_export_sections(project_id))
     return render_pdf(HTML(string=html))
@@ -452,6 +530,8 @@ def export_project_pdf(project_id):
 def show_config(config_id):
     """
     Get the current the current configuration and then show the configuration form template.
+    Configuration is global (not per-project/per-user), so no ownership
+    check is needed here beyond being logged in.
     """
     config = Configuration.query.filter_by(id=config_id).first()
     form = ConfigurationForm(obj=config)

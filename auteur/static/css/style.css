@@ -204,7 +204,7 @@ body > .container {
   z-index: 1080;
 }
 
-/* ---- Projects/Templates tabs (index.jinja) ---- */
+/* ---- Projects/Templates tabs (project_list.jinja) ---- */
 
 #listTypeTabs .nav-link {
   color: #6b6b68;
