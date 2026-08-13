@@ -62,6 +62,13 @@ def check_section_owner_or_404(section):
     return section
 
 
+def get_owned_checkpoint_or_404(checkpoint_id):
+    return (Checkpoint.query
+            .join(Project, Checkpoint.project_id == Project.id)
+            .filter(Checkpoint.id == checkpoint_id, Project.user_id == current_user.id)
+            .first_or_404())
+
+
 @bp.route('/')
 @bp.route('/get_project_list', methods=['GET'])
 def get_project_list():
@@ -348,7 +355,7 @@ def add_node(project_id):
     """
     nodes = request.get_json()
     parent_id = nodes.get('parent')
-    project = Project.query.filter(Project.id == project_id).first()
+    project = get_owned_project_or_404(project_id)
     parent = Structure.query.filter(Structure.id == parent_id).first()
     # Get the highest display order for this project so we can assign the new node to last place.
     max_display_order = db.session.query(db.func.max(Structure.displayorder)).filter(Structure.project_id == project_id).scalar()
@@ -585,7 +592,8 @@ def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
     :param project_id: The unique identifier for the project
     :return: Checkpoint
     """
-    checkpoint = Checkpoint(project_id=project_id, label=label)
+    get_owned_project_or_404(project_id)
+    checkpoint = Checkpoint(project_id=project_id, label=label, user=current_user)
     db.session.add(checkpoint)
 
     structures = Structure.query.filter_by(project_id=project_id).all()
@@ -611,10 +619,11 @@ def restore_checkpoint(checkpoint_id):
     :param checkpoint_id: Unique identifier for the checkpoint
     :return:
     """
-    checkpoint = db.get_or_404(Checkpoint, checkpoint_id)
+    # checkpoint = db.get_or_404(Checkpoint, checkpoint_id)
+    checkpoint = get_owned_checkpoint_or_404(checkpoint_id)
 
     # Safety net: snapshot current state before overwriting it.
-    create_checkpoint_internal(checkpoint.project_id, label=gettext('Auto-save before restore'))
+    create_checkpoint_internal(gettext('Auto-save before restore'), checkpoint.project_id)
 
     for cs in checkpoint.sections:
         structure = Structure.query.filter_by(id=cs.structure_id).first()
