@@ -6,7 +6,7 @@ Created on May 28, 2015
 import os
 import unittest
 from auteur import create_app
-from auteur.models import Project, Section, db
+from auteur.models import Project, Section, Configuration, db
 from flask import json
 
 from instance.config import basedir
@@ -36,14 +36,40 @@ class ProjectTestCase(unittest.TestCase):
         self.ctx.push()
         db.create_all()
 
+        # Every route that this test case exercises lives in the 'editor'
+        # blueprint, which now requires a logged-in user (each row a user
+        # creates is scoped to them - see get_owned_project_or_404 and
+        # friends in editor.py). Register + log in a single test user up
+        # front so the rest of the tests keep working the same way they
+        # did before that ownership model existed. Since only one user
+        # exists in this TestCase, all data created below belongs to it.
+        rv = self.app.post('/register', data=dict(
+            name='Automated Test Author',
+            email='author@example.com',
+            password='testpassword123',
+        ), follow_redirects=True)
+        assert rv.status_code == 200, 'test setup failed to register/log in the test user'
+
+        # export_project()/export_project_pdf() dereference
+        # Configuration.query.filter_by(id=1).first().export_node_titles
+        # with no null-check, so a Configuration row has to exist for
+        # export to work at all - seed the same default a fresh install
+        # would have.
+        db.session.add(Configuration(theme='light'))
+        db.session.commit()
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.ctx.pop()
 
     def test_empty_db(self):
-        rv = self.app.get('/')
-        self.assertIn(b'No entries here so far', rv.data)
+        # '/' itself is served by the plain, unauthenticated home() view
+        # (index.jinja), not the project list, so it's not a useful check
+        # of "no projects yet" - hit the actual (now login-gated) project
+        # list route instead, and match its current empty-state text.
+        rv = self.app.get('/get_project_list')
+        self.assertIn(b'No projects here so far', rv.data)
 
     def test_project(self):
         rv = self.app.post('/add_project', data=dict(
@@ -63,10 +89,14 @@ class ProjectTestCase(unittest.TestCase):
         self.assertIn(b'You need to name the project.', rv.data)
 
         # Expected to work and set up the situation for the duplication test.
+        # NOTE: is_template is intentionally omitted rather than passed as
+        # False - WTForms' BooleanField only treats a missing key or the
+        # literal string 'false' as unchecked; posting Python False here
+        # would urlencode to "False", which WTForms reads as checked, and
+        # this project would silently become a template.
         rv = self.app.post('/add_project', data=dict(
             name='Automated Test Project',
             description='Automated Test Project Description goes here!',
-            is_template=False,
             template=0
         ), follow_redirects=True)
         self.assertIn(b'Automated Test Project', rv.data)
@@ -76,7 +106,6 @@ class ProjectTestCase(unittest.TestCase):
         rv = self.app.post('/add_project', data=dict(
             name='Automated Test Project',
             description='Automated Test Project Description goes here! Description is different.',
-            is_template=False,
             template=0
         ), follow_redirects=True)
         self.assertIn(b'Name already used.  Maybe a writer should try to be more original?', rv.data)
@@ -93,7 +122,6 @@ class ProjectTestCase(unittest.TestCase):
                         data=dict(
                             name='Automated Test Project',
                             description='The description has been updated.',
-                            is_template=False,
                             template=0
                         ))
             data = json.loads(rv.data)
@@ -106,7 +134,6 @@ class ProjectTestCase(unittest.TestCase):
                         data=dict(
                             name='The Name Updated',
                             description='The description has been updated.',
-                            is_template=False,
                             template=0
                         ))
             data = json.loads(rv.data)
@@ -117,7 +144,6 @@ class ProjectTestCase(unittest.TestCase):
         self.app.post('/add_project', data=dict(
             name='Node Test Project',
             description='Automated Test Project for Checking Node Behaviour',
-            is_template=False,
             template=0
         ))
 
@@ -130,8 +156,10 @@ class ProjectTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was added.")
-        # Update it
-        node_id = data['id']
+        # add_node()'s response nests the new node under 'children':
+        # {"children": [{"id": ..., ...}], "status_text": ...} - there is
+        # no top-level 'id' key.
+        node_id = data['children'][0]['id']
         rv = self.app.post('/update_node',
                            headers=[('X-Requested-With', 'XMLHttpRequest')],
                            content_type='application/json',
@@ -139,11 +167,12 @@ class ProjectTestCase(unittest.TestCase):
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was updated.")
-        # And then delete it.
+        # And then delete it. delete_node() reads a single 'id' key, not
+        # a plural 'ids' list.
         rv = self.app.post('/delete_node',
                            headers=[('X-Requested-With', 'XMLHttpRequest')],
                            content_type='application/json',
-                           data=json.dumps(dict(ids=[node_id]))
+                           data=json.dumps(dict(id=node_id))
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Hoorah! Section was deleted.")
@@ -153,7 +182,6 @@ class ProjectTestCase(unittest.TestCase):
         self.app.post('/add_project', data=dict(
             name='Synopsis Test Project',
             description='Automated Test Project for Checking Synopsis Behaviour',
-            is_template=False,
             template=0
         ))
 
@@ -186,7 +214,6 @@ class ProjectTestCase(unittest.TestCase):
         self.app.post('/add_project', data=dict(
             name='Notes Test Project',
             description='Automated Test Project for Checking Notes Behaviour',
-            is_template=False,
             template=0
         ))
 
@@ -219,7 +246,6 @@ class ProjectTestCase(unittest.TestCase):
         self.app.post('/add_project', data=dict(
             name='Characters Test Project',
             description='Automated Test Project for Checking Characters Behaviour',
-            is_template=False,
             template=0
         ))
 
@@ -231,7 +257,7 @@ class ProjectTestCase(unittest.TestCase):
                            content_type='application/json',
                            data=json.dumps(dict(pos='last', parent=root_structure.id))
                            )
-        second_node_id = json.loads(rv.data)['id']
+        second_node_id = json.loads(rv.data)['children'][0]['id']
 
         # Add some text to the characters on the root node of our project.
         characters_id = root_structure.sectioncharacters.id
@@ -274,8 +300,11 @@ class ProjectTestCase(unittest.TestCase):
         project = Project.query.filter(Project.name == 'Update Section Test Project').first()
         section_id = project.structure[0].section.id
 
+        # NOTE: the form field the server reads is 'section_text', not
+        # 'sectiontext' - the app's own update_section() view does
+        # section.body = request.form['section_text'].
         rv = self.app.post('/update_section',
-                           data=dict(section_id=section_id, sectiontext='Some new section text.')
+                           data=dict(section_id=section_id, section_text='Some new section text.')
                            )
         data = json.loads(rv.data)
         self.assertEqual(data['status_text'], "Section save was a Complete Success!")
@@ -343,7 +372,7 @@ class ProjectTestCase(unittest.TestCase):
         # Give the template's root section some distinctive content to check it gets copied.
         root_structure = template_project.structure[0]
         self.app.post('/update_section',
-                      data=dict(section_id=root_structure.section.id, sectiontext='Template section text.')
+                      data=dict(section_id=root_structure.section.id, section_text='Template section text.')
                       )
 
         # Now create a new project based on that template.
