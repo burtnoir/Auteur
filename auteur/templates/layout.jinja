@@ -48,10 +48,9 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+
                     {% block navbar_buttons_after %}{% endblock %}
-                    <li class="nav-item">
-                        <a id="config" href="{{ url_for('editor.show_config') }}" role="button" class="nav-link" title="{{ _('Configuration') }}"><i class="fa-solid fa-gear"></i></a>
-                    </li>
+
                     {% if not current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">Login</a>
@@ -60,6 +59,9 @@
                         <a class="nav-link" href="{{ url_for('register') }}">Register</a>
                     </li>
                     {% else %}
+                    <li class="nav-item">
+                        <a id="config" href="{{ url_for('editor.show_config') }}" role="button" class="nav-link" title="{{ _('Configuration') }}"><i class="fa-solid fa-gear"></i></a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('logout') }}">Log Out</a>
                     </li>

@@ -1,9 +1,6 @@
 {% extends "layout.jinja" %}
 
 {% block body %}
-
-
-
     <div class="container px-4 text-center">
         <div class="row g-5">
             <div class="col">
@@ -13,6 +10,12 @@
                 </h1>
             </div>
         </div>
+        <div class="row g-5">
+            <div class="col">
+                <a id="backToList" role="button" href="{{ url_for('editor.get_template_list') if showing_templates else url_for('editor.get_project_list') }}" class="btn btn-success me-2" title="{{ _('Projects') }}">
+                        {{ _('Projects') }}
+                    </a>
+            </div>
+        </div>
     </div>
-
 {% endblock %}

@@ -387,4 +387,38 @@ document.addEventListener("DOMContentLoaded", (event) => {
             window.open(SCRIPT_ROOT + '/export_project_pdf/' + this.dataset.project_id, '_blank');
             return false;
         });
+
+        /**
+         * Go to the server to take a checkpoint for the project
+         */
+        const checkpoint = function (project_id) {
+            fetch(SCRIPT_ROOT + '/create_checkpoint/' + project_id, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        $('#statusbar').html('Problem with the checkpoint project function.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status) {
+                        $('#statusbar').html(data.status_text);
+                    }
+                })
+                .catch(error => console.error('There was an error with the Checkpoint Project Fetch operation: ', error));
+        };
+
+        // Attach a checkpoint event.
+        $('#checkpoint_project').on('click', function (event) {
+            // Next step is to make an ajax call to to the checkpoint.
+            checkpoint(this.dataset.project_id);
+
+            // Need to stop the bubbling or it will do the checkpoint and then go to the project.
+            return false;
+        });
+
     });

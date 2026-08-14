@@ -2,7 +2,7 @@
 {% from "bootstrap5/form.html" import render_form %}
 
 {% block navbar_buttons_after %}
-    <button type="button" class="btn btn-outline-info me-2" data-project_id="{{ project.id }}" aria-label="Checkpoint">
+    <button id="checkpoint_project" class="btn btn-outline-info me-2" data-project_id="{{ project.id }}" aria-label="Checkpoint">
         {{ _('Checkpoint') }}
     </button>
     <div class="btn-group" role="group" aria-label="Export Projects">
