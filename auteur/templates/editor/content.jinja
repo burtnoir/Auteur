@@ -2,7 +2,8 @@
 {% from "bootstrap5/form.html" import render_form %}
 
 {% block navbar_buttons_after %}
-    <button id="checkpoint_project" class="btn btn-outline-info me-2" data-project_id="{{ project.id }}" aria-label="Checkpoint">
+    <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#checkpointModal"
+            aria-label="Checkpoint">
         {{ _('Checkpoint') }}
     </button>
     <div class="btn-group" role="group" aria-label="Export Projects">
@@ -21,14 +22,29 @@
 {% block body %}
 <div id="mainrow" class="d-flex app-shell position-relative">
 
-  <div class="toast-container position-absolute top-0 end-0 p-3">
-    <div id="saveToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">{{ _('Saved') }}</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
+    <div class="toast-container position-absolute top-0 end-0 p-3">
+        <div id="saveToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">{{ _('Saved') }}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>
     </div>
-  </div>
+
+    <div class="modal fade" id="checkpointModal" tabindex="-1" aria-labelledby="checkpointModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="checkpointModalLabel">{{ _('Create Checkpoint') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="checkpointFormErrors" class="alert alert-danger d-none" role="alert"></div>
+                    {{ render_form(checkpoint_form, id="checkpointform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.create_checkpoint', project_id=project.id)) }}
+                </div>
+            </div>
+        </div>
+    </div>
 
   <!-- Left rail: Project details + Sections tree -->
   <aside class="sidebar border-end d-flex flex-column" id="leftsidebar">

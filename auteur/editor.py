@@ -11,7 +11,7 @@ from flask_wtf.csrf import CSRFError
 from sqlalchemy.orm.exc import StaleDataError
 from werkzeug.datastructures import Headers
 
-from auteur.forms import ProjectForm, ConfigurationForm
+from auteur.forms import ProjectForm, ConfigurationForm, CheckpointForm
 from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
     Configuration, CheckpointSection, Checkpoint
 
@@ -127,6 +127,10 @@ def show_content(project_id, structure_id):
     del form.template
     del form.submit
 
+    # Create the checkpoint form at the same time so it can be used if needed.
+    checkpoint_form = CheckpointForm()
+    checkpoint_form.project_id.data = project.id
+
     # If the id wasn't passed (probably because the call is from the project page)
     # then open the first structure item's text.
     if structure_id is None:
@@ -149,7 +153,8 @@ def show_content(project_id, structure_id):
                            synopsis=synopsis,
                            notes=notes,
                            characters=characters,
-                           form=form)
+                           form=form,
+                           checkpoint_form=checkpoint_form)
 
 
 def collect_descendant_section_text(structure_id, text_parts):
@@ -572,17 +577,22 @@ def save_config():
     return render_template('editor/config.jinja', config=configuration, form=form)
 
 
-@bp.route('/create_checkpoint/<int:project_id>', methods=['POST'])
-def create_checkpoint(project_id):
+@bp.route('/create_checkpoint', methods=['POST'])
+def create_checkpoint():
     """
     Create a checkpoint for a project
     :param project_id: Unique identifier for the project
     :return:
     """
-    label = request.form.get('label') or gettext('Checkpoint')
-    checkpoint = create_checkpoint_internal(label, project_id)
-    return jsonify(status=True, checkpoint_id=checkpoint.id,
-                   status_text=gettext("Checkpoint '%(label)s' created.", label=label))
+    form = CheckpointForm()
+    project_id = form.project_id.data
+    get_owned_project_or_404(project_id)
+    if form.validate_on_submit():
+        label = form.label.data or gettext('Checkpoint')
+        checkpoint = create_checkpoint_internal(label, project_id)
+        return jsonify(status=True, checkpoint_id=checkpoint.id,
+                       status_text=gettext("Checkpoint '%(label)s' created.", label=label))
+    return jsonify(status=False, label_errors=form.label.errors)
 
 
 def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
@@ -619,7 +629,6 @@ def restore_checkpoint(checkpoint_id):
     :param checkpoint_id: Unique identifier for the checkpoint
     :return:
     """
-    # checkpoint = db.get_or_404(Checkpoint, checkpoint_id)
     checkpoint = get_owned_checkpoint_or_404(checkpoint_id)
 
     # Safety net: snapshot current state before overwriting it.
