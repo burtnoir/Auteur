@@ -108,7 +108,7 @@ class ProjectTestCase(unittest.TestCase):
             description='Automated Test Project Description goes here! Description is different.',
             template=0
         ), follow_redirects=True)
-        self.assertIn(b'Name already used.  Maybe a writer should try to be more original?', rv.data)
+        self.assertIn(b'Name already used.  They have to be unique so you can tell them apart.', rv.data)
 
         # Get the project id so we can try some updates.
         project_id = Project.query.with_entities(Project.id).filter(Project.name == 'Automated Test Project').first()[0]

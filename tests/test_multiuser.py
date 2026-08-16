@@ -365,25 +365,12 @@ class MultiUserTestCase(unittest.TestCase):
 
         self.assertEqual(self._characters_body('Alice Characters Project'), '')
 
-    # ------------------------------------------------------------------
-    # checkpoints
-    #
-    # NOTE: create_checkpoint() and restore_checkpoint() in editor.py do
-    # not currently call get_owned_project_or_404() (or equivalent) at
-    # all, unlike every other route in the blueprint. These two tests are
-    # written to describe the *intended* multi-user behaviour and will
-    # fail against the current code - that failure is a real finding, not
-    # a broken test, and is worth fixing:
-    #   - create_checkpoint(project_id) should 404 if project_id isn't
-    #     owned by current_user.
-    #   - restore_checkpoint(checkpoint_id) should 404 if the checkpoint's
-    #     project isn't owned by current_user.
-    # ------------------------------------------------------------------
+
     def test_cannot_create_checkpoint_for_another_users_project(self):
         self._add_project(self.alice, 'Alice Checkpoint Project')
         project = self._project('Alice Checkpoint Project')
 
-        rv = self.bob.post('/create_checkpoint/%d' % project.id, data=dict(label='Bobs Checkpoint'))
+        rv = self.bob.post('/create_checkpoint', data=dict(label='Bobs Checkpoint', project_id=project.id))
         self.assertEqual(
             rv.status_code, 404,
             "Bob was able to create a checkpoint on Alice's project - "
@@ -398,7 +385,7 @@ class MultiUserTestCase(unittest.TestCase):
         self.alice.post('/update_section', data=dict(
             section_id=section_id, section_text='Original text.'
         ))
-        rv = self.alice.post('/create_checkpoint/%d' % project.id, data=dict(label='Before edits'))
+        rv = self.alice.post('/create_checkpoint', data=dict(label='Before edits', project_id=project.id))
         checkpoint_id = json.loads(rv.data)['checkpoint_id']
 
         self.alice.post('/update_section', data=dict(
