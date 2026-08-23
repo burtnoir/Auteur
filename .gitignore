@@ -67,3 +67,4 @@ target/
 /structure_experiments.py
 /instance/test.db
 /instance/auteur.db
+node_modules/

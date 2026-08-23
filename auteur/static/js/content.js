@@ -391,6 +391,9 @@ document.addEventListener("DOMContentLoaded", (event) => {
     const checkpointModalEl = document.getElementById('checkpointModal');
     const checkpointModal = new bootstrap.Modal(checkpointModalEl);
 
+    /**
+     * Handle the checkpoint modal submit and response.
+     */
     $("#checkpointform").submit(function (event) {
         event.preventDefault();
         const formEl = this;
@@ -428,5 +431,58 @@ document.addEventListener("DOMContentLoaded", (event) => {
         $('#checkpointFormErrors').addClass('d-none').empty();
     });
 
+    /**
+     * Load the current checkpoints into the selection when showing the restore modal.
+     */
+    $('#restorepointModal').on('show.bs.modal', function () {
+        // Get the current restore points and update the drop down here.
+        fetch(SCRIPT_ROOT + '/get_checkpoints/' + this.dataset.project_id)
+            .then(response => {
+                if (!response.ok) {
+                    console.log('Problem with fetch_checkpoint: %o', response.json());
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    // Now use the data to update the checkpoints in the restore modal.
+                    $("#check_point_selection").select2({
+                        theme: "bootstrap-5",
+                        data: data
+                    });
+                }
+            })
+            .catch(error => console.error('There was an error with the Checkpoint Fetch operation: ', error));
+    });
 
+    /**
+     * Handle the restore checkpoint modal submit and response.
+     */
+    $("#restorepointform").submit(function (event) {
+        event.preventDefault();
+        const formEl = this;
+        const formData = new FormData(formEl);
+        fetch(SCRIPT_ROOT + '/restore_checkpoint', {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": $('meta[name=csrf-token]').attr('content')
+            },
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    console.log('Problem with restore_checkpoint: %o', response.json());
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status) {
+                    $('#statusbar').html(data.status_text);
+                    window.location.reload();
+                } else {
+                    $('#statusbar').html(data.status_text || 'Problem with restore_checkpoint');
+                }
+            })
+            .catch(error => console.error('There was an error with the Restore Checkpoint Fetch operation: ', error));
+    });
 });

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import markdown
 from flask import (
     Blueprint, flash, redirect, render_template, request, url_for, Response, session, current_app,
@@ -11,7 +13,7 @@ from flask_wtf.csrf import CSRFError
 from sqlalchemy.orm.exc import StaleDataError
 from werkzeug.datastructures import Headers
 
-from auteur.forms import ProjectForm, ConfigurationForm, CheckpointForm
+from auteur.forms import ProjectForm, ConfigurationForm, CheckpointForm, RestorepointForm
 from auteur.models import db, Project, Structure, Section, SectionSynopsis, SectionNotes, SectionCharacters, \
     Configuration, CheckpointSection, Checkpoint
 
@@ -26,6 +28,7 @@ def require_login():
     """
     if not current_user.is_authenticated:
         return current_app.login_manager.unauthorized()
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +133,8 @@ def show_content(project_id, structure_id):
     # Create the checkpoint form at the same time so it can be used if needed.
     checkpoint_form = CheckpointForm()
     checkpoint_form.project_id.data = project.id
+    restorepoint_form = RestorepointForm()
+    restorepoint_form.project_id.data = project_id
 
     # If the id wasn't passed (probably because the call is from the project page)
     # then open the first structure item's text.
@@ -154,7 +159,8 @@ def show_content(project_id, structure_id):
                            notes=notes,
                            characters=characters,
                            form=form,
-                           checkpoint_form=checkpoint_form)
+                           checkpoint_form=checkpoint_form,
+                           restorepoint_form=restorepoint_form)
 
 
 def collect_descendant_section_text(structure_id, text_parts):
@@ -581,7 +587,6 @@ def save_config():
 def create_checkpoint():
     """
     Create a checkpoint for a project
-    :param project_id: Unique identifier for the project
     :return:
     """
     form = CheckpointForm()
@@ -622,17 +627,18 @@ def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
     return checkpoint
 
 
-@bp.route('/restore_checkpoint/<int:checkpoint_id>', methods=['POST'])
-def restore_checkpoint(checkpoint_id):
+@bp.route('/restore_checkpoint', methods=['POST'])
+def restore_checkpoint():
     """
     Restore a checkpoint of a project
-    :param checkpoint_id: Unique identifier for the checkpoint
     :return:
     """
+    form = RestorepointForm()
+    checkpoint_id = form.check_point.data
     checkpoint = get_owned_checkpoint_or_404(checkpoint_id)
 
     # Safety net: snapshot current state before overwriting it.
-    create_checkpoint_internal(gettext('Auto-save before restore'), checkpoint.project_id)
+    create_checkpoint_internal(gettext("Auto-save before restore %(current_date)s", current_date=datetime.now().isoformat(sep=" ", timespec="seconds")), checkpoint.project_id)
 
     for cs in checkpoint.sections:
         structure = Structure.query.filter_by(id=cs.structure_id).first()
@@ -650,6 +656,19 @@ def restore_checkpoint(checkpoint_id):
 
     db.session.commit()
     return jsonify(status=True, status_text=gettext("Restored the checkpoint: '%(label)s'.", label=checkpoint.label))
+
+
+@bp.route('/get_checkpoints/<int:project_id>', methods=['GET'])
+def get_checkpoints(project_id):
+    """
+    Get the checkpoints for this project.
+    """
+    #project_id = request.args.get('project_id', 0, type=int)
+    # project_id is client-supplied - verify it's owned by this user before returning anything
+    get_owned_project_or_404(project_id)
+    checkpoints = Checkpoint.query.filter_by(project_id=project_id).all()
+    checkpoints_dict = [checkpoint.to_dict() for checkpoint in checkpoints]
+    return jsonify(checkpoints_dict)
 
 
 @bp.app_errorhandler(CSRFError)

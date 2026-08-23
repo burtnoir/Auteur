@@ -203,6 +203,12 @@ class Checkpoint(db.Model):
     def __repr__(self):
         return '<Checkpoint %r (%r)>' % (self.label, self.project_id)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "text": self.label
+        }
+
 
 class CheckpointSection(db.Model):
     """

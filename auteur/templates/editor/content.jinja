@@ -2,11 +2,19 @@
 {% from "bootstrap5/form.html" import render_form %}
 
 {% block navbar_buttons_after %}
-    <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#checkpointModal"
-            aria-label="Checkpoint">
-        {{ _('Checkpoint') }}
-    </button>
-    <div class="btn-group" role="group" aria-label="Export Projects">
+    <div class="btn-group me-2" role="group" aria-label="Project Checkpoints">
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          {{ _('Checkpoints') }}
+        </button>
+        <ul class="dropdown-menu">
+          <li><button id="checkpoint_button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#checkpointModal" aria-label="Checkpoint">{{ _('Checkpoint') }}</button></li>
+          <li><button id="restorepoint_button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#restorepointModal" aria-label="Restore">{{ _('Restore Checkpoint') }}</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="btn-group me-2" role="group" aria-label="Export Projects">
       <div class="btn-group" role="group">
         <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           {{ _('Export') }}
@@ -41,6 +49,21 @@
                 <div class="modal-body">
                     <div id="checkpointFormErrors" class="alert alert-danger d-none" role="alert"></div>
                     {{ render_form(checkpoint_form, id="checkpointform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.create_checkpoint', project_id=project.id)) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="restorepointModal" tabindex="-1" aria-labelledby="restorepointModalLabel" aria-hidden="true" data-project_id="{{ project.id }}">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="restorepointModalLabel">{{ _('Restore Checkpoint') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="restorepointFormErrors" class="alert alert-danger d-none" role="alert"></div>
+                    {{ render_form(restorepoint_form, id="restorepointform", novalidate=True, button_map={"submit": "success"}, action=url_for('editor.restore_checkpoint')) }}
                 </div>
             </div>
         </div>
@@ -183,7 +206,6 @@
 <script src="{{ url_for('static', filename='lib/markdown-text-editor/markdown-text-editor.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/content.js') }}"></script>
 <script>
-
   $('#tree_add').click(function () {
     treeAdd({{ project.id }});
   });
@@ -205,7 +227,6 @@
     event.preventDefault();
     saveText({{ project.id }});
   });
-
 
   // Save toast: fire whenever content.js dispatches a 'auteur:saved' event.
   // See note below about adding this trigger to content.js's save callbacks.

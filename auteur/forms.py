@@ -78,7 +78,7 @@ class CheckpointForm(FlaskForm):
     label = StringField(lazy_gettext('Label'),
                        validators=[DataRequired(message=lazy_gettext('You need to name the checkpoint.')),
                                    Length(min=1, max=120, message=lazy_gettext(
-                                       'This label can be a mximum of 120 characters should be enough for anyone.'))]
+                                       'This label can be a maximum of 120 characters.'))]
                        )
     submit = SubmitField(lazy_gettext('Add Checkpoint'))
 
@@ -96,3 +96,11 @@ class CheckpointForm(FlaskForm):
         num_same_labels = query.scalar()
         if num_same_labels > 0:
             raise ValidationError(lazy_gettext('This label was already used.  They have to be different so you can tell them apart'))
+
+class RestorepointForm(FlaskForm):
+    """
+    Allow the user to select a checkpoint they want to restore.
+    """
+    project_id = HiddenField()
+    check_point = SelectField(lazy_gettext('Checkpoint'), coerce=int, id="check_point_selection")
+    submit = SubmitField(lazy_gettext('Restore Checkpoint'))
