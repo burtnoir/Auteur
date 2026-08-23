@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
     const projectId = $('#tree').data('project-id');
     const projectTree = new mar10.Wunderbaum(
         {
+            "debugLevel": 2, // Default is 4 = verbose
             "element": document.getElementById("tree"),
             "id": "wunderbaum_tree",
             "iconMap": "fontawesome6",

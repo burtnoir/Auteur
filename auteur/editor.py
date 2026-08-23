@@ -638,7 +638,9 @@ def restore_checkpoint():
     checkpoint = get_owned_checkpoint_or_404(checkpoint_id)
 
     # Safety net: snapshot current state before overwriting it.
-    create_checkpoint_internal(gettext("Auto-save before restore %(current_date)s", current_date=datetime.now().isoformat(sep=" ", timespec="seconds")), checkpoint.project_id)
+    create_checkpoint_internal(gettext("Auto-save before restoring %(label)s at %(current_date)s",
+                                       label=checkpoint.label,
+                                       current_date=datetime.now().isoformat(sep=" ", timespec="seconds")), checkpoint.project_id)
 
     for cs in checkpoint.sections:
         structure = Structure.query.filter_by(id=cs.structure_id).first()
@@ -663,10 +665,9 @@ def get_checkpoints(project_id):
     """
     Get the checkpoints for this project.
     """
-    #project_id = request.args.get('project_id', 0, type=int)
     # project_id is client-supplied - verify it's owned by this user before returning anything
     get_owned_project_or_404(project_id)
-    checkpoints = Checkpoint.query.filter_by(project_id=project_id).all()
+    checkpoints = Checkpoint.query.filter_by(project_id=project_id).order_by(Checkpoint.created_date.desc()).all()
     checkpoints_dict = [checkpoint.to_dict() for checkpoint in checkpoints]
     return jsonify(checkpoints_dict)
 
