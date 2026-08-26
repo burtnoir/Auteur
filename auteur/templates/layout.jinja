@@ -29,11 +29,6 @@
     <!-- Bootstrap core JS-->
     <!-- TODO Add a local version of this to keep it self contained -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Tree plugin -->
-    <!-- Using the tree: https://github.com/mar10/wunderbaum/tree/main to avoid jQuery dependency and get some more functionality -->
-    <script src="{{ url_for('static', filename='lib/wunderbaum/wunderbaum.umd.min.js') }}"></script>
-    <!-- Select2 javascript -->
-    <script src="{{ url_for('static', filename='lib/select2/js/select2.full.min.js') }}"></script>
 
     <!-- Local Styles -->
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
@@ -42,6 +37,7 @@
         document.documentElement.setAttribute('data-bs-theme', '{{ config.theme }}');
         document.documentElement.setAttribute('data-theme', '{{ config.theme }}');
     </script>
+    {%  block head_script %}{% endblock %}
 </head>
 
 <body>

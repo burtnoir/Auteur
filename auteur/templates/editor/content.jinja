@@ -1,6 +1,16 @@
 {% extends "layout.jinja" %}
 {% from "bootstrap5/form.html" import render_form %}
 
+{% block head_script %}
+    <!-- Tree plugin -->
+    <!-- Using the tree: https://github.com/mar10/wunderbaum/tree/main to avoid jQuery dependency and get some more functionality -->
+    <script src="{{ url_for('static', filename='lib/wunderbaum/wunderbaum.umd.min.js') }}"></script>
+    <!-- Select2 javascript -->
+    <script src="{{ url_for('static', filename='lib/select2/js/select2.full.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/markdown-text-editor/markdown-text-editor.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/content.js') }}"></script>
+{%  endblock %}
+
 {% block navbar_buttons_after %}
     <div class="btn-group me-2" role="group" aria-label="Project Checkpoints">
       <div class="btn-group" role="group">
@@ -124,6 +134,7 @@
                 <textarea id="section_text" name="section_text">{{ section.body }}</textarea>
             </div>
             <input id="section_id" name="section_id" type="hidden" value="{{ section.id }}" />
+            <input id="structure_id" type="hidden" value="{{ section.structure_id }}" />
         </form>
 
         <div class="editor-pane editor-pane-readonly">
@@ -203,8 +214,6 @@
 
 </div>
 
-<script src="{{ url_for('static', filename='lib/markdown-text-editor/markdown-text-editor.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/content.js') }}"></script>
 <script>
   $('#tree_add').click(function () {
     treeAdd({{ project.id }});

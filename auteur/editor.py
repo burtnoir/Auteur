@@ -139,8 +139,8 @@ def show_content(project_id, structure_id):
     # If the id wasn't passed (probably because the call is from the project page)
     # then open the first structure item's text.
     if structure_id is None:
-        structure = Structure.query.filter_by(project_id=project.id)
-        structure_id = structure[0].id
+        structure = Structure.query.filter_by(project_id=project.id, parent_id=None).first()
+        structure_id = structure.id
     else:
         # structure_id came from the URL - make sure it actually belongs to
         # this project/user rather than trusting it blindly.

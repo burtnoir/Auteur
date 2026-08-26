@@ -20,6 +20,15 @@ document.addEventListener("DOMContentLoaded", (event) => {
                 "url": SCRIPT_ROOT + '/get_project_tree',
                 "params": {"project_id": projectId}
             },
+            "load": function (e) {
+                const currentStructureId = $('#structure_id').val();
+                if (currentStructureId) {
+                    const node = projectTree.findKey(currentStructureId);
+                    if (node) {
+                        node.setActive();
+                    }
+                }
+            },
             "activate": function (e) {
                 // If more than one was selected we just use the first
                 // one to get the section text.
@@ -391,6 +400,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
     const checkpointModalEl = document.getElementById('checkpointModal');
     const checkpointModal = new bootstrap.Modal(checkpointModalEl);
+    const restorepointModalEl = document.getElementById('restorepointModal');
+    const restorepointModal = new bootstrap.Modal(restorepointModalEl);
 
     /**
      * Handle the checkpoint modal submit and response.
@@ -478,8 +489,14 @@ document.addEventListener("DOMContentLoaded", (event) => {
             })
             .then(data => {
                 if (data.status) {
+                    // Hide the modal and rest the form so it doesn't remember the value we selected when it opens again.
+                    $('#restorepointFormErrors').addClass('d-none').empty();
+                    restorepointModal.hide();
+                    formEl.reset();
                     $('#statusbar').html(data.status_text);
-                    window.location.reload();
+                    // The restore happened so now we need to refresh the screen so the user is now working in the restored
+                    // project.  The simplest way to do that for most of the content is to click the tree branch.
+                    projectTree.reload();
                 } else {
                     $('#statusbar').html(data.status_text || 'Problem with restore_checkpoint');
                 }
