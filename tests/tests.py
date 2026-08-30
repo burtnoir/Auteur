@@ -6,7 +6,7 @@ Created on May 28, 2015
 import os
 import unittest
 from auteur import create_app
-from auteur.models import Project, Section, Configuration, db
+from auteur.models import Project, Section, Configuration, Structure, db
 from flask import json
 
 from instance.config import basedir
@@ -451,6 +451,115 @@ class ProjectTestCase(unittest.TestCase):
         ), follow_redirects=True)
         self.assertIn(b'This name is too long - 256 characters should be enough for anyone.', rv.data)
 
+    def test_checkpoint_restore_recreates_deleted_node(self):
+        # Root -> child, with distinctive title/text on the child so we can
+        # confirm both come back correctly on restore.
+        self.app.post('/add_project', data=dict(
+            name='Checkpoint Restore Test Project',
+            description='Automated Test Project for Checking Checkpoint Restore Behaviour',
+            template=0
+        ))
+        project = Project.query.filter(Project.name == 'Checkpoint Restore Test Project').first()
+        root_structure = project.structure[0]
+
+        rv = self.app.post('/add_node/' + str(project.id),
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
+                           data=json.dumps(dict(pos='last', parent=root_structure.id))
+                           )
+        child_id = json.loads(rv.data)['children'][0]['id']
+
+        self.app.post('/update_node',
+                      headers=[('X-Requested-With', 'XMLHttpRequest')],
+                      content_type='application/json',
+                      data=json.dumps(dict(id=child_id, text='Child Before Delete')))
+        section_id = Section.query.filter_by(structure_id=child_id).first().id
+        self.app.post('/update_section', data=dict(
+            section_id=section_id, section_text='Child text before delete.'
+        ))
+
+        # Checkpoint while the child still exists, then delete it.
+        rv = self.app.post('/create_checkpoint', data=dict(
+            project_id=project.id, label='Before deleting child'
+        ))
+        checkpoint_id = json.loads(rv.data)['checkpoint_id']
+
+        self.app.post('/delete_node',
+                      headers=[('X-Requested-With', 'XMLHttpRequest')],
+                      content_type='application/json',
+                      data=json.dumps(dict(id=child_id)))
+        self.assertIsNone(db.session.get(Structure, child_id))
+
+        rv = self.app.post('/restore_checkpoint', data=dict(check_point=checkpoint_id))
+        self.assertTrue(json.loads(rv.data)['status'])
+
+        # The child should be back under the same parent, with its
+        # checkpoint-time title and text. Note: we deliberately don't assert
+        # anything about its id - whether the recreated row reuses the old
+        # child_id or gets a fresh one is an implementation detail of
+        # SQLite's rowid reuse, not a guarantee restore_checkpoint makes.
+        restored_children = Structure.query.filter_by(parent_id=root_structure.id).all()
+        self.assertEqual(len(restored_children), 1)
+        restored_child = restored_children[0]
+        self.assertEqual(restored_child.title, 'Child Before Delete')
+        self.assertEqual(restored_child.section.body, 'Child text before delete.')
+
+    def test_checkpoint_restore_recreates_deleted_subtree(self):
+        # Root -> child -> grandchild. Deleting the child cascades and takes
+        # the grandchild with it too (Structure.children's
+        # cascade="all, delete-orphan"), so restoring needs to recreate both,
+        # with the grandchild correctly reattached to the recreated child.
+        self.app.post('/add_project', data=dict(
+            name='Checkpoint Restore Subtree Test Project',
+            description='Automated Test Project for Checking Checkpoint Restore of a Deleted Subtree',
+            template=0
+        ))
+        project = Project.query.filter(Project.name == 'Checkpoint Restore Subtree Test Project').first()
+        root_structure = project.structure[0]
+
+        rv = self.app.post('/add_node/' + str(project.id),
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
+                           data=json.dumps(dict(pos='last', parent=root_structure.id)))
+        child_id = json.loads(rv.data)['children'][0]['id']
+        self.app.post('/update_node',
+                      headers=[('X-Requested-With', 'XMLHttpRequest')],
+                      content_type='application/json',
+                      data=json.dumps(dict(id=child_id, text='Child')))
+
+        rv = self.app.post('/add_node/' + str(project.id),
+                           headers=[('X-Requested-With', 'XMLHttpRequest')],
+                           content_type='application/json',
+                           data=json.dumps(dict(pos='last', parent=child_id)))
+        grandchild_id = json.loads(rv.data)['children'][0]['id']
+        self.app.post('/update_node',
+                      headers=[('X-Requested-With', 'XMLHttpRequest')],
+                      content_type='application/json',
+                      data=json.dumps(dict(id=grandchild_id, text='Grandchild')))
+
+        rv = self.app.post('/create_checkpoint', data=dict(
+            project_id=project.id, label='Before deleting child subtree'
+        ))
+        checkpoint_id = json.loads(rv.data)['checkpoint_id']
+
+        self.app.post('/delete_node',
+                      headers=[('X-Requested-With', 'XMLHttpRequest')],
+                      content_type='application/json',
+                      data=json.dumps(dict(id=child_id)))
+        self.assertIsNone(db.session.get(Structure, child_id))
+        self.assertIsNone(db.session.get(Structure, grandchild_id))
+
+        rv = self.app.post('/restore_checkpoint', data=dict(check_point=checkpoint_id))
+        self.assertTrue(json.loads(rv.data)['status'])
+
+        # Again, no assertions on id - just that the tree shape and content
+        # came back right: a "Child" under root, and a "Grandchild" under
+        # whichever row "Child" ended up as.
+        restored_child = Structure.query.filter_by(parent_id=root_structure.id, title='Child').first()
+        self.assertIsNotNone(restored_child)
+
+        restored_grandchild = Structure.query.filter_by(parent_id=restored_child.id, title='Grandchild').first()
+        self.assertIsNotNone(restored_grandchild)
 
 if __name__ == "__main__":
     unittest.main()

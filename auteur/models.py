@@ -215,6 +215,11 @@ class CheckpointSection(db.Model):
     Snapshot of one structure node's four text bodies at checkpoint time.
     Denormalized (one row holds all four bodies) since they're always
     checkpointed together and it keeps restore simple.
+
+    parent_id/displayorder are snapshotted too (not just a live FK - the
+    parent may itself have been deleted since this checkpoint was taken),
+    so restore_checkpoint() can recreate a deleted node in its original
+    place in the tree rather than just skipping it.
     """
     __tablename__ = 'checkpoint_section'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -222,6 +227,11 @@ class CheckpointSection(db.Model):
     checkpoint: Mapped["Checkpoint"] = relationship(backref=db.backref('sections', cascade='all, delete-orphan'))
 
     structure_id: Mapped[int] = mapped_column(Integer, ForeignKey('structure.id'))
+    # Deliberately NOT a ForeignKey('structure.id') - by the time we come to
+    # restore, the parent row this pointed at may itself have been deleted
+    # (same reason structure_id above can already point at a gone row).
+    parent_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    displayorder: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(80))  # snapshot the title too, in case it's renamed later
     section_body: Mapped[str] = mapped_column(Text)
     synopsis_body: Mapped[str] = mapped_column(Text)

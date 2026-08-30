@@ -616,6 +616,8 @@ def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
         db.session.add(CheckpointSection(
             checkpoint=checkpoint,
             structure_id=structure.id,
+            parent_id=structure.parent_id,
+            displayorder=structure.displayorder,
             title=structure.title,
             section_body=structure.section.body if structure.section else '',
             synopsis_body=structure.sectionsynopsis.body if structure.sectionsynopsis else '',
@@ -630,7 +632,12 @@ def create_checkpoint_internal(label: str, project_id) -> Checkpoint:
 @bp.route('/restore_checkpoint', methods=['POST'])
 def restore_checkpoint():
     """
-    Restore a checkpoint of a project
+    Restore a checkpoint of a project. Any node that's been deleted since the
+    checkpoint was taken is recreated (with its original title/text and its
+    original place in the tree) rather than silently skipped - including,
+    recursively, any ancestor of that node that was also deleted, since a
+    whole deleted subtree needs its parent chain rebuilt before a child can
+    be reattached to it.
     :return:
     """
     form = RestorepointForm()
@@ -642,19 +649,62 @@ def restore_checkpoint():
                                        label=checkpoint.label,
                                        current_date=datetime.now().isoformat(sep=" ", timespec="seconds")), checkpoint.project_id)
 
-    for cs in checkpoint.sections:
+    # Keyed by the *original* structure_id from checkpoint time, so a child
+    # row can find its parent's checkpoint snapshot even though the parent
+    # may need to be recreated (and will get a brand new id when it is).
+    cs_by_structure_id = {cs.structure_id: cs for cs in checkpoint.sections}
+    # original structure_id -> live Structure row, filled in as we go so
+    # each node (existing or recreated) is only resolved once.
+    resolved = {}
+
+    def restore_or_recreate(cs):
+        if cs.structure_id in resolved:
+            return resolved[cs.structure_id]
+
         structure = Structure.query.filter_by(id=cs.structure_id).first()
-        if structure is None:
-            continue  # TODO node was deleted since this checkpoint was made - allow for this by recreating the node
-        structure.title = cs.title
-        if structure.section:
-            structure.section.body = cs.section_body
-        if structure.sectionsynopsis:
-            structure.sectionsynopsis.body = cs.synopsis_body
-        if structure.sectionnotes:
-            structure.sectionnotes.body = cs.notes_body
-        if structure.sectioncharacters:
-            structure.sectioncharacters.body = cs.characters_body
+        if structure is not None:
+            structure.title = cs.title
+            if structure.section:
+                structure.section.body = cs.section_body
+            if structure.sectionsynopsis:
+                structure.sectionsynopsis.body = cs.synopsis_body
+            if structure.sectionnotes:
+                structure.sectionnotes.body = cs.notes_body
+            if structure.sectioncharacters:
+                structure.sectioncharacters.body = cs.characters_body
+            resolved[cs.structure_id] = structure
+            return structure
+
+        # Node was deleted since the checkpoint was taken - recreate it,
+        # first recursively recreating its parent if that was deleted too.
+        parent = None
+        if cs.parent_id is not None:
+            parent_cs = cs_by_structure_id.get(cs.parent_id)
+            if parent_cs is not None:
+                parent = restore_or_recreate(parent_cs)
+            else:
+                # The parent wasn't part of this checkpoint's own section
+                # list (shouldn't normally happen, since a checkpoint always
+                # snapshots the whole tree) - fall back to whatever's
+                # currently live, or leave it a root node if that's gone too.
+                parent = Structure.query.filter_by(id=cs.parent_id).first()
+
+        new_structure = Structure(title=cs.title, displayorder=cs.displayorder,
+                                  project=checkpoint.project, parent=parent)
+        db.session.add(new_structure)
+        db.session.add(Section(body=cs.section_body, structure=new_structure))
+        db.session.add(SectionSynopsis(body=cs.synopsis_body, structure=new_structure))
+        db.session.add(SectionNotes(body=cs.notes_body, structure=new_structure))
+        db.session.add(SectionCharacters(body=cs.characters_body, structure=new_structure))
+        # Flush so new_structure.id is populated in case a child of this
+        # node also needs recreating and has to attach to it as a parent.
+        db.session.flush()
+
+        resolved[cs.structure_id] = new_structure
+        return new_structure
+
+    for cs in checkpoint.sections:
+        restore_or_recreate(cs)
 
     db.session.commit()
     return jsonify(status=True, status_text=gettext("Restored the checkpoint: '%(label)s'.", label=checkpoint.label))
